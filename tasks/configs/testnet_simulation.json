@@ -1,0 +1,40 @@
+{
+    "simulationTag": "A",
+    "token": {
+        "name": "TestnetTokenB",
+        "symbol": "TTB",
+        "ownerId": 0
+    },
+    "tokenSaleMarket": {
+        "ownerId": 2,
+        "fee": 3,
+        "signerId": 0
+    },
+    "creatorAddressId": 0,
+    "operationalAddressId": 1,
+    "treshoryPool": {
+        "participantsId": [2, 3],
+        "shares": [80, 20]
+    },
+    "simulationPools": [
+        {
+            "name": "SimulationPool",
+            "participantsId": [8,5,7,6],
+            "shares": [5, 20, 60, 15],
+            "dates": {
+                "nIterations": 20,
+                "timeDelta": 86400
+            }
+        }
+    ],
+    "regression": {
+        "TokenPoolMaster": {
+            "coef": 57746,
+            "intercept": 393739
+        },
+        "EthPoolMaster": {
+            "coef": 37170,
+            "intercept": 375620
+        }
+    }
+}

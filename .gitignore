@@ -1,0 +1,39 @@
+.DS_Store
+node_modules/
+/dist
+
+# local env files
+.env.local
+.env.*.local
+.env
+
+# Log files
+npm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+
+#artifacts
+build/*
+artifacts/*
+cache/*
+
+env/
+venv/
+.env
+
+#config
+config/*
+
+typechain-types
+.openzeppelin
+*.csv
+*.zip
+
+tasks/deploys/*.json

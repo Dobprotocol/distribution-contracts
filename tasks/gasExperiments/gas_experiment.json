@@ -1,0 +1,28 @@
+{
+    "experiment": {
+        "repeat": 3,
+        "n_users": [2, 4, 8, 16, 24, 32, 48, 56, 64, 72, 80, 88, 96, 104, 128],
+        "copy": [2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 192]
+    },
+    "contracts": {
+        "storage": "EternalStorage",
+        "poolMaster": "PoolMaster",
+        "participationPool": "NoLimitDistributionPool",
+        "tokenSaleMarket": "TokenSaleMarket",
+        "proxy": "LogicProxy"
+    },
+    "addressIds": {
+        "creator": 0,
+        "operational": 0,
+        "treasuryOwner": 1,
+        "tokenSaleMarketOwner": 2
+    },
+    "regression": {
+        "coef": 1,
+        "intercept": 1
+    },
+    "commission": {
+        "poolMaster": 300,
+        "tokenSaleMarket": 300
+    }
+}

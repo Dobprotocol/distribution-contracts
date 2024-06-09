@@ -1,0 +1,28 @@
+{
+    "contracts": {
+        "storage": "EternalStorage",
+        "poolMasterDeployer": "PoolMaster",
+        "poolMasterConfig": "PoolMasterConfig",
+        "participationPool": "DistributionPool",
+        "tokenSaleMarket": "TokenSaleMarket",
+        "proxy": "LogicProxy"
+    },
+    "addressIds": {
+        "creator": 0,
+        "creatorExpected": "0xF266231D5f3035FfcD480bba20f54EdA9C94F448",
+        "storageOwner": "0xdCb63598B9C65d6113338f7B72769F4de3b770CE",
+        "operational": "0xD3CD7294CF83Feb44DBC6399d2807df941730cba",
+        "treasuryOwner": "0x1a0c9a447Bc896fC6Dcd46273D0d23dCe513D12a",
+        "tokenSaleMarketOwner": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F"
+    },
+    "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "2000000000"
+    },
+    "commission": {
+        "poolMaster": 300,
+        "tokenSaleMarket": 300
+    }
+
+}

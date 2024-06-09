@@ -1,0 +1,26 @@
+{
+    "contracts": {
+        "storage": "EternalStorage",
+        "poolMasterDeployer": "PoolMaster",
+        "poolMasterConfig": "PoolMasterConfig",
+        "participationPool": "DistributionPoolFixGasVar",
+        "tokenSaleMarket": "TokenSaleMarket",
+        "proxy": "LogicProxy"
+    },
+    "addressIds": {
+        "creator": 0,
+        "operational": 3,
+        "treasuryOwner": 1,
+        "tokenSaleMarketOwner": 2
+    },
+    "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "2000000000"
+    },
+    "commission": {
+        "poolMaster": 300,
+        "tokenSaleMarket": 300
+    }
+
+}
