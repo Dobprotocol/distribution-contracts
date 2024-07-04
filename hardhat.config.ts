@@ -5,11 +5,11 @@ import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
 
 
-import "./tasks/deployDobBase"
+import "./tasks/deploydobBase"
 import "./tasks/deployNewLogic"
 import "./tasks/upgradePool"
 import "./tasks/upgradePoolMaster"
-import "./tasks/deployDobToken"
+import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 
 
