@@ -35,7 +35,7 @@ interface LockedStakingInterface {
     // set a new staking config to the pool
     function setStakingConfig(
         StakingConfig memory config
-    ) external;
+    ) external returns(bytes32);
 
     // drop and close a staking config
     // this will execute transfetFrom() calls to return funds
@@ -56,5 +56,5 @@ interface LockedStakingInterface {
         StakingConfig memory
     );
 
-    function getconfigKey(StakingConfig memory config) external view returns (bytes32);
+    function getConfigKey(StakingConfig memory config) external view returns (bytes32);
 }
