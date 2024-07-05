@@ -16,3 +16,12 @@ struct StakingConfigUsage {
     uint256 _totalStaked;
     bool dropped;
 }
+
+enum ConfigState {
+    PreOpened, // 0
+    Opened, // 1
+    Locked, // 2
+    Completed, // 3
+    Dropped, // 4
+    NotSet // 5
+}
