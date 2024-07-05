@@ -34,6 +34,16 @@ export async function deployExternalToken(
     return extToken
 }
 
+export async function deployLockedStaking(
+    owner: Signer, stakingTokenAddress: string, rewardTokenAddress: string
+) : Promise<Contract>{
+    const LockedStaking= await ethers.getContractFactory("LockedStaking");
+    const staking = await LockedStaking.connect(owner).deploy(
+        stakingTokenAddress, rewardTokenAddress
+    )
+    return staking
+}
+
 export async function deployPoolMaster(creator: Signer, _storage: Contract): Promise<[Contract, Contract]>{
     const PoolMasterConfig = await ethers.getContractFactory("PoolMasterConfig");
     const PoolMaster = await ethers.getContractFactory("PoolMaster");
