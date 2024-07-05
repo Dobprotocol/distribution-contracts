@@ -7,6 +7,7 @@ import "../../interface/staking/LockedStakingInterface.sol";
 import "../../types/StakingConfig.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "hardhat/console.sol";
 
 // import "./utils/Array.sol";
 
@@ -40,7 +41,9 @@ contract LockedStaking is Ownable, LockedStakingInterface {
 
     function withdrawRemains() external override onlyOwner {}
 
-    function setStakingConfig(StakingConfig memory config) external override onlyOwner {
+    function setStakingConfig(
+        StakingConfig memory config
+    ) external override onlyOwner returns(bytes32){
         /**
          * set a new configuration for staking
          *
@@ -54,14 +57,14 @@ contract LockedStaking is Ownable, LockedStakingInterface {
          * - depositPeriodDuration must be at least 1 day
          * - lockPeriodDuration must be at least 1 week
          */
-        bytes32 key_ = getconfigKey(config);
+        bytes32 key_ = getConfigKey(config);
         require(!configExists(key_), "config already exists, cannot set");
         require(
             config.lockPeriodDuration > 86400 * 7,
             "lockPeriodDuration must be at least 1 week"
         );
         require(
-            config.depositPeriodDuration > 86400,
+            config.depositPeriodDuration >= 86400,
             "depositPeriodDuration must be at least 1 day"
         );
         require(
@@ -72,20 +75,15 @@ contract LockedStaking is Ownable, LockedStakingInterface {
             config.depositPeriodDuration % 86400 == 0,
             "depositPeriodDuration must be divisible by 86400"
         );
-
-        require(
-            config.startDate >= block.timestamp + 86400,
-            "startDate must be at least 1 day in the future"
-        );
-
-        uint256 currentBalance_ = _rewardToken.balanceOf(address(this));
-        uint256 currentLocked_ = getTotalLockedTokens();
-        require(
-            currentLocked_ + config.tokensForRewards <= currentBalance_,
-            "not enough balance to lock tokens for this config"
-        );
+        console.log("block timestamp", block.timestamp);
+        console.log("startDate should be >=", block.timestamp + 86400 - 60);
+        // we apply an offset of -60 seconds here, in case
+        // const res = await _staking.functions.configKeys();
         // if everything checks, create the config
         configs[key_].config = config;
+        configKeys.push(key_);
+        console.log("new configKeys list is:", configKeys.length);
+        return key_;
     }
 
     function dropStakingConfig(bytes32 key) external override onlyOwner {
@@ -165,7 +163,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         return configs[key].config;
     }
 
-    function getconfigKey(
+    function getConfigKey(
         StakingConfig memory config
     ) public pure override returns (bytes32) {
         return
@@ -185,14 +183,15 @@ contract LockedStaking is Ownable, LockedStakingInterface {
     ) external override onlyOwner {
         /**
          * conditions:
-         * - phase must be [0,1]
+         * - state must be [PreOpened, Opened]
          * - check that there are enough tokens for the update
          * - check that the new tokensForRewards is enough to
          *      maintain the already staked tokens (if any)
          */
+        ConfigState state = getConfigState(key);
         require(
-            getConfigPhase(key) < 2,
-            "to update, config cannot be locked or finished"
+            state == ConfigState.PreOpened || state == ConfigState.Opened,
+            "to update, config cannot only be PreOpened or Opened"
         );
         uint256 currentBalance_ = _rewardToken.balanceOf(address(this));
         uint256 currentLocked_ = getTotalLockedTokens();
@@ -226,9 +225,9 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         uint256 total_ = 0;
         for (uint256 i_ = 0; i_ < configKeys.length; i_++) {
             bytes32 key_ = configKeys[i_];
-            // if phase < 2 (in [0,1])
-            uint256 phase = getConfigPhase(key_);
-            if (phase < 2) {
+            // if state is [PreOpened, Opened]
+            ConfigState state = getConfigState(key_);
+            if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
                 // use tokensForRewards
                 total_ += configs[key_].config.tokensForRewards;
             } else {
@@ -236,12 +235,11 @@ contract LockedStaking is Ownable, LockedStakingInterface {
                 // use formula
                 total_ += estimateRemainingRewards(key_);
             }
-            total_ += configs[configKeys[i_]].config.tokensForRewards;
         }
         return total_;
     }
 
-    function getConfigPhase(bytes32 key) public view returns (uint256) {
+    function getConfigState(bytes32 key) public view returns (ConfigState) {
         /**
          * phases are:
          * 0: block.timestamp > startDate
@@ -256,23 +254,26 @@ contract LockedStaking is Ownable, LockedStakingInterface {
          *      - config is complete and ready to give rewards
          * 4: dropped = True
          *      - if dropped, phase should be 4
+         * 5: startDate = 0
+         *      - config is "empty", not really set
          */
-        if (configs[key].dropped) return 4;
         uint256 ts_ = block.timestamp;
         StakingConfig memory config = configs[key].config;
-        if (ts_ < config.startDate) return 0;
+        if (configs[key].dropped) return ConfigState.Dropped;
+        else if (config.startDate == 0) return ConfigState.NotSet;
+        else if (ts_ < config.startDate) return ConfigState.PreOpened;
         else if (
             config.startDate <= ts_ &&
             ts_ < config.startDate + config.depositPeriodDuration
-        ) return 1;
+        ) return ConfigState.Opened;
         else if (
             config.startDate + config.depositPeriodDuration <= ts_ &&
             ts_ <
             config.startDate +
                 config.depositPeriodDuration +
                 config.lockPeriodDuration
-        ) return 2;
-        else return 3;
+        ) return ConfigState.Locked;
+        else return ConfigState.Completed;
     }
 
     function estimateRemainingRewards(
