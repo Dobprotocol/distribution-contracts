@@ -113,7 +113,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         configs[key].dropped = true;
     }
 
-    function flushOldConfigs() external onlyOwner {
+    function flushOldConfigs() external override onlyOwner {
         /**
          * removes the indexes for the configs
          * that are already finished and empty.
@@ -213,7 +213,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         configs[key].config.tokensForRewards = tokensForRewards;
     }
 
-    function getTotalLockedStakedAmount() public view returns (uint256) {
+    function getTotalLockedStakedAmount() public view override returns (uint256) {
         uint256 total_ = 0;
         for (uint256 i_ = 0; i_ < configKeys.length; i_++) {
             total_ += configs[configKeys[i_]]._totalStaked;
@@ -221,7 +221,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         return total_;
     }
 
-    function getTotalLockedRewards() public view returns (uint256) {
+    function getTotalLockedRewards() public view override returns (uint256) {
         uint256 total_ = 0;
         for (uint256 i_ = 0; i_ < configKeys.length; i_++) {
             bytes32 key_ = configKeys[i_];
@@ -239,7 +239,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         return total_;
     }
 
-    function getConfigState(bytes32 key) public view returns (ConfigState) {
+    function getConfigState(bytes32 key) public view override returns (ConfigState) {
         /**
          * phases are:
          * 0: block.timestamp > startDate
@@ -278,7 +278,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
 
     function estimateRemainingRewards(
         bytes32 key
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         /**
          * estimates the amount of rewardsTokens required
          * based on the amount of tokens staked in the specific config.
@@ -301,14 +301,14 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         return rewardsToBe_ / 100000;
     }
 
-    function configExists(bytes32 key) public view returns (bool) {
+    function configExists(bytes32 key) public view override returns (bool) {
         for (uint256 i_ = 0; i_ < configKeys.length; i_++) {
             if (configKeys[i_] == key) return true;
         }
         return false;
     }
 
-    function getTotalLockedTokens() public view returns (uint256) {
+    function getTotalLockedTokens() public view override returns (uint256) {
         uint256 currentLocked_ = getTotalLockedRewards();
         if (address(_rewardToken) == address(_stakeToken)) {
             currentLocked_ += getTotalLockedStakedAmount();

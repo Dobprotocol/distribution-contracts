@@ -2,21 +2,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../../types/StakingConfig.sol";
-// import "../StorageInterface.sol";
 
 interface LockedStakingInterface {
-
-    // struct StakingConfig{
-    //     uint256 id;
-    //     uint256 dprOver100000;
-    //     uint256 tokensForRewards;
-    //     uint256 lockPeriodDuration;
-    //     uint256 depositPeriodDuration;
-    //     uint256 startDate;
-    //     mapping(address => uint256) _stakedPerUser;
-    //     uint256 _activeUsersCounter;
-    //     uint256 _totalStaked;
-    // }
 
     // deposit tokens to a specific stake config
     function stake(uint256 _configId, uint256 _amount) external;
@@ -37,15 +24,16 @@ interface LockedStakingInterface {
         StakingConfig memory config
     ) external returns(bytes32);
 
-    // drop and close a staking config
-    // this will execute transfetFrom() calls to return funds
-    // to each address asigned to the stake config
-    // depending on the date, this could be considered
-    // and early withdraw and not give rewards to anyone.
+    // set a config to dropped
+    // a dropped config cannot give rewards
+    // nor allow deposits, it will only allow claims
+    // of staked amounts
     // CAN ONLY BE EXECUTED BY OWNER
     function dropStakingConfig(
         bytes32 _key
     ) external;
+
+    function flushOldConfigs() external;
 
     function updateStakingConfig(
         bytes32 _key, uint256 tokensForRewards
@@ -57,4 +45,18 @@ interface LockedStakingInterface {
     );
 
     function getConfigKey(StakingConfig memory config) external view returns (bytes32);
+
+    function getTotalLockedStakedAmount() external view returns (uint256);
+
+    function getTotalLockedRewards() external view returns (uint256);
+
+    function getConfigState(bytes32 key) external view returns (ConfigState);
+
+    function estimateRemainingRewards(
+        bytes32 key
+    ) external view returns (uint256);
+
+    function configExists(bytes32 key) external view returns (bool);
+
+    function getTotalLockedTokens() external view returns (uint256);
 }
