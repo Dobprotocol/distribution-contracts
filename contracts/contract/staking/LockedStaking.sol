@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 
-// import "./utils/Array.sol";
+import "./utils/ArrayBytes32.sol";
 
 contract LockedStaking is Ownable, LockedStakingInterface {
     /**
@@ -20,7 +20,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
      *  that info is emitted through events
      */
     using SafeERC20 for ERC20;
-    // using ArrayBytes32 for bytes32[];
+    using ArrayBytes32 for bytes32[];
 
     mapping(bytes32 => StakingConfigUsage) private configs;
     bytes32[] public configKeys;
@@ -51,7 +51,8 @@ contract LockedStaking is Ownable, LockedStakingInterface {
          *
          * - lockPeriodDuration and depositPeriodDurations must be integer days
          *      wich means, divisible by 86400
-         * - config must be unique in the pairs (DRP, LockPeriod, DepositPeriod, startDate)
+         * - config must be unique in the pairs 
+         *      (DRP, LockPeriod, DepositPeriod, startDate)
          * - balance should be enough to lock the required tokens.
          * - startPeriod must be at least 1 day in the future
          * - depositPeriodDuration must be at least 1 day
@@ -137,26 +138,6 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         // }
     }
 
-    // Function to remove an element by index
-    function removeByIndex(uint256 index) internal {
-        require(index < configKeys.length, "Index out of bounds");
-
-        for (uint256 i = index; i < configKeys.length - 1; i++) {
-            configKeys[i] = configKeys[i + 1];
-        }
-        configKeys.pop();
-    }
-
-    // Function to find the index of an element in the array
-    function findElementIndex(bytes32 element) internal view returns (uint256) {
-        for (uint256 i = 0; i < configKeys.length; i++) {
-            if (configKeys[i] == element) {
-                return i;
-            }
-        }
-        return configKeys.length; // Return array length if element is not found
-    }
-
     function getStakingConfig(
         bytes32 key
     ) external view override returns (StakingConfig memory) {
@@ -191,7 +172,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
         ConfigState state = getConfigState(key);
         require(
             state == ConfigState.PreOpened || state == ConfigState.Opened,
-            "to update, config cannot only be PreOpened or Opened"
+            "to update, config can only be PreOpened or Opened"
         );
         uint256 currentBalance_ = _rewardToken.balanceOf(address(this));
         uint256 currentLocked_ = getTotalLockedTokens();
@@ -258,6 +239,7 @@ contract LockedStaking is Ownable, LockedStakingInterface {
          *      - config is "empty", not really set
          */
         uint256 ts_ = block.timestamp;
+        console.log("[contract] timestamp", ts_);
         StakingConfig memory config = configs[key].config;
         if (configs[key].dropped) return ConfigState.Dropped;
         else if (config.startDate == 0) return ConfigState.NotSet;
