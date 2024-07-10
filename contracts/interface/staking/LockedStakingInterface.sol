@@ -6,14 +6,14 @@ import "../../types/StakingConfig.sol";
 interface LockedStakingInterface {
 
     // deposit tokens to a specific stake config
-    function stake(uint256 _configId, uint256 _amount) external;
+    function stake(bytes32 _configId, uint256 _amount) external;
 
     // claim staked tokens + rewards from an specific stake config
-    function claim(uint256 _configId) external;
+    function claim(bytes32 _configId) external;
 
     // withdraw from a stake config without gaining rewards, 
     // claims only the staked amount
-    function earlyWithdraw(uint256 _configId) external;
+    function earlyWithdraw(bytes32 _configId) external;
 
     // withdraw the balance that is not locked behind a stake config
     // this function can only be used by the owner address
@@ -52,11 +52,7 @@ interface LockedStakingInterface {
 
     function getConfigState(bytes32 key) external view returns (ConfigState);
 
-    function estimateRemainingRewards(
-        bytes32 key
-    ) external view returns (uint256);
-
-    function configExists(bytes32 key) external view returns (bool);
+    function configActive(bytes32 key) external view returns (bool);
 
     function getTotalLockedTokens() external view returns (uint256);
 }

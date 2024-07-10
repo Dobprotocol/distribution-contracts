@@ -14,6 +14,7 @@ struct StakingConfigUsage {
     mapping(address => uint256) _stakedPerUser;
     uint256 _activeUsersCounter;
     uint256 _totalStaked;
+    uint256 _claimedRewards;
     bool dropped;
 }
 
