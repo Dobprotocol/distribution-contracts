@@ -67,7 +67,7 @@ describe("TEST setConfig() function interactions", function () {
         }
     })
 
-    it("test set configuration and related getters", async function () {
+    it("set configuration and related getters", async function () {
         // validate getters before setting a new config
         const [stakingKey] = await _staking.functions.getConfigKey(_stakingConfig1);
         console.log("staking key is:", stakingKey)
@@ -130,7 +130,7 @@ describe("TEST setConfig() function interactions", function () {
             })
     })
 
-    it("test set a duplicated config should revert", async function () {
+    it("[BorderCase] set a duplicated config", async function () {
         // set the staking config
         await _staking.connect(_owner)
             .functions.setStakingConfig(_stakingConfig1)
@@ -145,7 +145,7 @@ describe("TEST setConfig() function interactions", function () {
     })
 
     it(
-    "setStakingConfig for lockPeriodDuration < 7days should revert", 
+    "[BorderCase] setStakingConfig for lockPeriodDuration < 7days", 
     async function (){
         // lockPeriodDuration must be at least 1 week
         let tmp: StakingConfig = JSON.parse(JSON.stringify(_stakingConfig1));
@@ -158,7 +158,7 @@ describe("TEST setConfig() function interactions", function () {
         )
     })
     it(
-    "setStakingConfig for depositPeriodDuration < 1day should revert", 
+    "[BorderCase] setStakingConfig for depositPeriodDuration < 1day", 
     async function(){
         let tmp: StakingConfig = JSON.parse(JSON.stringify(_stakingConfig1));
         tmp.depositPeriodDuration = _oneDay - 60 // 23:59 < 1day
@@ -170,7 +170,7 @@ describe("TEST setConfig() function interactions", function () {
         )
     })
     it(
-    "setStakingConfig for lockPeriodDuration not divisible by 1day should revert",
+    "[BorderCase] setStakingConfig for lockPeriodDuration not divisible by 1day",
     async function(){
         let tmp: StakingConfig = JSON.parse(JSON.stringify(_stakingConfig1));
         tmp.lockPeriodDuration = _oneDay * 7 + 60 // 7day+60sec % 1day = 60 != 0
@@ -182,7 +182,7 @@ describe("TEST setConfig() function interactions", function () {
         )
     })
     it(
-    "setStakingConfig for depositPeriodDuration not divisible by 1day should revert", 
+    "[BorderCase] setStakingConfig for depositPeriodDuration not divisible by 1day", 
     async function(){
         let tmp: StakingConfig = JSON.parse(JSON.stringify(_stakingConfig1));
         tmp.depositPeriodDuration = _oneDay + 60 //1day+60sec % 1day = 60 != 0
@@ -193,4 +193,19 @@ describe("TEST setConfig() function interactions", function () {
             revertMsg("depositPeriodDuration must be divisible by 86400")
         )
     })
+    it(
+        "[BorderCase] set a config when contract has not enough reward tokens to lock", 
+        async function(){
+            let tmp: StakingConfig = JSON.parse(JSON.stringify(_stakingConfig1));
+            tmp.tokensForRewards = ethers.utils.parseEther("1000").add(BigNumber.from(1)).toString()
+
+            tmp.tokensForRewards
+            await expect(
+                _staking.connect(_owner)
+                    .functions.setStakingConfig(tmp)
+            ).to.be.rejectedWith(
+                revertMsg("not enough tokens in contract")
+            )
+        }
+    )
 })

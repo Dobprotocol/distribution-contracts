@@ -44,6 +44,8 @@ describe("TEST state changes and dropConfig() function interactions", function (
         _todayEpoch = Math.floor(Date.now() / 1000);
         _zero = BigNumber.from(0)
         _stakingConfig1 = newConfig()
+        let block = await ethers.provider.getBlock("latest");
+        _stakingConfig1.startDate = block.timestamp + oneDay;
     })
     it (
         "check state changes PreOpened->Opened->Locked->Completed", 

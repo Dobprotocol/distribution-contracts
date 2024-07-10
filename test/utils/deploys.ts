@@ -37,7 +37,9 @@ export async function deployExternalToken(
 export async function deployLockedStaking(
     owner: Signer, stakingTokenAddress: string, rewardTokenAddress: string
 ) : Promise<Contract>{
-    const LockedStaking= await ethers.getContractFactory("LockedStaking");
+    const ArrayBytes32 = await ethers.getContractFactory("ArrayBytes32");
+    const libraryArray = await ArrayBytes32.connect(owner).deploy();
+    const LockedStaking= await ethers.getContractFactory("LockedStaking", {libraries: {ArrayBytes32: libraryArray.address}});
     const staking = await LockedStaking.connect(owner).deploy(
         stakingTokenAddress, rewardTokenAddress
     )

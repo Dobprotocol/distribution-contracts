@@ -1,0 +1,65 @@
+import { ethers, network } from "hardhat";
+import { expect } from "chai";
+import "@nomiclabs/hardhat-web3";
+import { deployExternalToken, deployLockedStaking } from "../utils/deploys";
+import { Contract, Signer, BigNumber } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { revertMsg, StakingConfig, getDPR, newConfig, oneDay } from "./utils";
+
+describe("TEST claim() function interactions", function () {
+    let accounts: SignerWithAddress[];
+    let _owner: Signer;
+    let _staking: Contract;
+    let _token: Contract;
+    let _zero: BigNumber;
+    let _stakingConfig1: StakingConfig;
+    beforeEach(async function () {
+        accounts = await ethers.getSigners();
+        _owner = accounts[0];
+        _token = await deployExternalToken(
+            _owner,
+            "testStaking",
+            "TST",
+            ethers.utils.parseEther("1000").toString()
+        )
+        _staking = await deployLockedStaking(
+            _owner,
+            _token.address,
+            _token.address
+        )
+
+        await _token.connect(_owner).functions
+            .transfer(
+                _staking.address,
+                ethers.utils.parseEther("100").toString()
+            )
+        _zero = BigNumber.from(0)
+        _stakingConfig1 = newConfig()
+        let block = await ethers.provider.getBlock("latest");
+        _stakingConfig1.startDate = block.timestamp + oneDay;
+    })
+    it(
+        "claim stake+rewards from a Completed config",
+        async function () {
+
+        }
+    )
+    it(
+        "[borderCase] try to claim when user has no staked tokens",
+        async function () {
+
+        }
+    )
+    it(
+        "[borderCase] try to claim when config is not Completed",
+        async function () {
+
+        }
+    )
+    it(
+        "[borderCase] try to claim from a notSet config",
+        async function () {
+
+        }
+    )
+})

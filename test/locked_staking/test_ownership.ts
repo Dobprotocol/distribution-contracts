@@ -6,7 +6,7 @@ import { Contract, Signer, BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { revertMsg, StakingConfig, getDPR, newConfig, oneDay } from "./utils";
 
-describe("TEST flushOldConfig() function interactions", function () {
+describe("TEST ownership conditions", function () {
     let accounts: SignerWithAddress[];
     let _owner: Signer;
     let _staking: Contract;
