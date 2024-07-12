@@ -186,7 +186,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         bytes32 key_ = getConfigKey(config);
         require(!configActive(key_), "config already exists, cannot set");
         require(
-            config.lockPeriodDuration > 86400 * 7,
+            config.lockPeriodDuration >= 86400 * 7,
             "lockPeriodDuration must be at least 1 week"
         );
         require(
