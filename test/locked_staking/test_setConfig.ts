@@ -24,7 +24,6 @@ describe("TEST setConfig() function interactions", function () {
     let _staking: Contract;
     let _token: Contract;
     let _oneDay: number;
-    let _todayEpoch: number;
     let _APR: number;
     let _DPR: number;
     let _zero: BigNumber;
@@ -49,7 +48,7 @@ describe("TEST setConfig() function interactions", function () {
                 _staking.address,
                 ethers.utils.parseEther("100").toString()
             )
-        _todayEpoch = Math.floor(Date.now() / 1000);
+        let block = await ethers.provider.getBlock("latest");
         _oneDay = 86400;
         _APR = 0.1; // 10%
         _DPR = Math.floor(10000000 * _APR / 365);
@@ -63,7 +62,7 @@ describe("TEST setConfig() function interactions", function () {
             tokensForRewards: ethers.utils.parseEther("10").toString(),
             lockPeriodDuration: _oneDay * 10, // 10 days
             depositPeriodDuration: _oneDay, // 1 day
-            startDate: _todayEpoch + _oneDay // tomorrow
+            startDate: block.timestamp + _oneDay // tomorrow
         }
     })
 

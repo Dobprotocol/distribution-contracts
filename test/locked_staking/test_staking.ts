@@ -331,5 +331,29 @@ describe("TEST staking logic interactions", function () {
             await checkUserStaked(D, configId, user, stakeAmount1);
         }
     )
+    it (
+        "[BorderCase] try to stake to a notSet config",
+        async function(){
+            const configId = 0
+            let block = await ethers.provider.getBlock("latest")
+            const user = accounts[1];
+            const stakeAmount = ethers.utils.parseEther("5")
+            const notSetConfig: StakingConfig = newConfig(
+                0.4,
+                ethers.utils.parseEther("20000").toString(),
+                oneDay * 12,
+                oneDay * 1,
+                block.timestamp + oneDay * 2 // start the day after tomorrow
+            );
+            const [stakingKey] = await D.staking.functions.getConfigKey(notSetConfig);
+            
+            await expect(
+                D.staking.connect(user)
+                .functions.stake(stakingKey, stakeAmount.toString())
+            ).to.be.rejectedWith(
+                revertMsg("config must be in state Opened")
+            )
+        }
+    )
 
 })

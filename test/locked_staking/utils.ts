@@ -161,10 +161,79 @@ export async function stakeTokens(
         .functions.stake(stakingKey, stakeAmount.toString())
 
     // update balances and values
-    D.balances.contractBalance = D.balances.contractBalance.add(stakeAmount);
-    D.balances.totalStaked = D.balances.totalStaked.add(stakeAmount);
-    D.stakingValues[configId].activeUsersCount = D.stakingValues[configId].activeUsersCount.add(BigNumber.from(1))
-    D.stakingValues[configId].totalStaked = D.stakingValues[configId].totalStaked.add(stakeAmount);
+    D.balances.contractBalance = 
+        D.balances.contractBalance.add(stakeAmount);
+    D.balances.totalStaked = 
+        D.balances.totalStaked.add(stakeAmount);
+    D.stakingValues[configId].activeUsersCount = 
+        D.stakingValues[configId].activeUsersCount.add(BigNumber.from(1));
+    D.stakingValues[configId].totalStaked = 
+        D.stakingValues[configId].totalStaked.add(stakeAmount);
+}
+
+export async function claimTokens(
+    D: TestingData,
+    user: SignerWithAddress,
+    configId: number
+){ 
+    const stakingKey = D.stakingKeys[configId]
+    const [stakeAmount] = await D.staking.functions
+        .getConfigUserStakedAmount(stakingKey, user.address)
+    const [rewardAmount] = await D.staking.functions
+        .estimateConfigUserRewards(stakingKey, user.address)
+    await D.staking.connect(user)
+        .functions.claim(stakingKey)
+
+    // update balances and values
+    D.balances.contractBalance = 
+        D.balances.contractBalance.sub(stakeAmount).sub(rewardAmount);
+    D.balances.totalStaked = 
+        D.balances.totalStaked.sub(stakeAmount);
+    D.stakingValues[configId].activeUsersCount = 
+        D.stakingValues[configId].activeUsersCount.sub(BigNumber.from(1));
+    D.stakingValues[configId].totalStaked = 
+        D.stakingValues[configId].totalStaked.sub(stakeAmount);
+    D.stakingValues[configId].totalClaimed = 
+        D.stakingValues[configId].totalClaimed.add(rewardAmount);
+}
+
+export async function earlyWithdrawTokens(
+    D: TestingData,
+    user: SignerWithAddress,
+    configId: number
+){
+    const stakingKey = D.stakingKeys[configId]
+    const [stakeAmount] = await D.staking.functions
+        .getConfigUserStakedAmount(stakingKey, user.address)
+
+    // made an early withdraw
+    await D.staking.connect(user).functions
+        .earlyWithdraw(stakingKey)
+
+    // update balances and values
+    D.balances.contractBalance = 
+        D.balances.contractBalance.sub(stakeAmount);
+    D.balances.totalStaked = 
+        D.balances.totalStaked.sub(stakeAmount);
+    D.stakingValues[configId].activeUsersCount = 
+        D.stakingValues[configId].activeUsersCount.sub(BigNumber.from(1));
+    D.stakingValues[configId].totalStaked = 
+        D.stakingValues[configId].totalStaked.sub(stakeAmount);
+
+}
+
+export async function withdrawRemainsTokens(
+    D: TestingData
+){
+    const [totalLockedTokens] = await D.staking.functions.getTotalLockedTokens();
+    const [balance] = await D.token.functions.balanceOf(D.staking.address);
+    const notLockedTokens = balance.sub(totalLockedTokens);
+
+    await D.staking.connect(D.owner).functions.withdrawRemains();
+
+    // update balances
+    D.balances.contractBalance = 
+        D.balances.contractBalance.sub(notLockedTokens);
 }
 
 export async function checkUserStaked(
@@ -209,4 +278,32 @@ export async function checkBalances(
         .then((res) => {
             expect(res).to.equal(expectedBalances.contractBalance)
         })
+}
+
+export async function setConfigToOpen(
+    D: TestingData,
+    configId: number
+){
+    let block = await ethers.provider.getBlock("latest")
+    let step = D.stakingConfigs[configId].startDate - block.timestamp + 60;
+    await network.provider.send("evm_increaseTime", [step]);
+    await network.provider.send("evm_mine");
+}
+
+export async function skipFromOpenToLocked(
+    D: TestingData,
+    configId: number
+){
+    let step = D.stakingConfigs[configId].depositPeriodDuration
+    await network.provider.send("evm_increaseTime", [step]);
+    await network.provider.send("evm_mine");
+}
+
+export async function skipFromLockedToCompleted(
+    D: TestingData,
+    configId: number
+){
+    let step = D.stakingConfigs[configId].lockPeriodDuration
+    await network.provider.send("evm_increaseTime", [step]);
+    await network.provider.send("evm_mine");
 }
