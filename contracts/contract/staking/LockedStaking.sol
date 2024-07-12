@@ -39,6 +39,30 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     ERC20 private immutable _stakeToken;
     ERC20 private immutable _rewardToken;
 
+    //////////////////////////////////
+    // events
+    //////////////////////////////////
+    event ConfigUpdate(bytes32 key, uint256 newTokensForReward);
+    event ConfigSet(
+        bytes32 key,
+        uint256 dprOpver10kk,
+        uint256 tokensForRewards,
+        uint256 lockPeriodDuration,
+        uint256 depositPeriodDuration,
+        uint256 startDate
+    );
+    event ConfigDrop(bytes32 key);
+    event ConfigRemove(bytes32 key);
+    event StakeTokens(bytes32 key, address user, uint256 amount);
+    event ClaimTokens(
+        bytes32 key,
+        address user,
+        uint256 amountStake,
+        uint256 amountReward
+    );
+    event EarlyWithdrawTokens(bytes32 key, address user, uint256 amount);
+    event WithdrawRemains(uint256 amount);
+
     constructor(ERC20 stakingToken, ERC20 rewardsToken) {
         _stakeToken = stakingToken;
         _rewardToken = rewardsToken;
@@ -81,6 +105,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         config._stakedPerUser[msg.sender] += _amount;
         config._totalStaked += _amount;
         config._activeUsersCounter++;
+        emit StakeTokens(_configId, msg.sender, _amount);
     }
 
     function claim(bytes32 _configId) external override nonReentrant {
@@ -109,6 +134,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         config._totalStaked -= stakedAmount;
         config._claimedRewards += expectedReward;
         config._activeUsersCounter--;
+        emit ClaimTokens(_configId, msg.sender, stakedAmount, expectedReward);
     }
 
     function earlyWithdraw(bytes32 _configId) external override nonReentrant {
@@ -128,6 +154,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         config._stakedPerUser[msg.sender] = 0;
         config._totalStaked -= stakedAmount;
         config._activeUsersCounter--;
+        emit EarlyWithdrawTokens(_configId, msg.sender, stakedAmount);
     }
 
     /**
@@ -146,6 +173,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         uint256 withdrawTokens = balance - lockedTokens;
         require(withdrawTokens > 0, "no tokens available to withdraw");
         _safeTransfer(_rewardToken, msg.sender, withdrawTokens);
+        emit WithdrawRemains(withdrawTokens);
     }
 
     //////////////////////////////////
@@ -182,7 +210,14 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         // if everything checks, create the config
         configs[key_].config = config;
         configKeys.push(key_);
-        // console.log("new configKeys list is:", configKeys.length);
+        emit ConfigSet(
+            key_,
+            config.dprOver10kk,
+            config.tokensForRewards,
+            config.lockPeriodDuration,
+            config.depositPeriodDuration,
+            config.startDate
+        );
         return key_;
     }
 
@@ -190,6 +225,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         require(configActive(key), "config not found");
         require(!configs[key].dropped, "config already dropped");
         configs[key].dropped = true;
+        emit ConfigDrop(key);
     }
 
     function flushOldConfigs() external override onlyOwner {
@@ -204,6 +240,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
                 (state == ConfigState.Dropped || state == ConfigState.Completed)
             ) {
                 configKeys.removeByIndex(i - 1);
+                emit ConfigRemove(key);
             }
         }
     }
@@ -235,6 +272,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         );
         // update
         configs[key].config.tokensForRewards = tokensForRewards;
+        emit ConfigUpdate(key, tokensForRewards);
     }
 
     //////////////////////////////////
