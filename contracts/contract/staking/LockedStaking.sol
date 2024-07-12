@@ -7,7 +7,7 @@ import "../../interface/staking/LockedStakingInterface.sol";
 import "../../types/StakingConfig.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 import "./utils/ArrayBytes32.sol";
 
@@ -15,9 +15,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     /**
      * @dev
      *
-     * notes:
-     * * i dont need to know what are the currently active configurations
-     *  that info is emitted through events
      */
     using SafeERC20 for ERC20;
     using ArrayBytes32 for bytes32[];
@@ -33,6 +30,11 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
      */
     bytes32[] public configKeys;
 
+    /**
+     * @dev in theory the contract allows different tokens for staking and 
+     *      rewards, however the testing functionality is only
+     *      for same stake and reward tokens.
+     */
     ERC20 private immutable _stakeToken;
     ERC20 private immutable _rewardToken;
 
@@ -250,7 +252,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
          */
         require(configActive(key), "config not found");
         require(!configs[key].dropped, "config already dropped");
-        console.log("[contract] dropping config");
         configs[key].dropped = true;
     }
 
@@ -393,15 +394,12 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
             bytes32 key_ = configKeys[i_];
             // if state is [PreOpened, Opened]
             ConfigState state = getConfigState(key_);
-            console.log("[contract] config state", uint256(state));
             if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
                 // use tokensForRewards
-                console.log("[contract] using tokensForEwards", configs[key_].config.tokensForRewards);
                 total_ += configs[key_].config.tokensForRewards;
             } else {
                 // case phase >= 0 (in [2,3])
                 // use formula
-                console.log("[contract] using formula from staked tokens: ", estimateConfigTotalRewards(key_));
                 total_ += estimateConfigTotalRewards(key_);
             }
         }
@@ -502,9 +500,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     }
 
     function getTotalLockedTokens() public view override returns (uint256) {
-        console.log("[contract] number of active configs", configKeys.length);
         uint256 currentLocked_ = getTotalLockedRewards();
-        console.log("[contract] total locked rewards:", currentLocked_);
         if (address(_rewardToken) == address(_stakeToken)) {
             currentLocked_ += getTotalLockedStakedAmount();
         }
@@ -528,19 +524,20 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         bytes32 key
     ) public view returns (uint256 maxStake) {
         if (isNotSet(key) || isDropped(key)) return maxStake;
-        StakingConfig memory config = configs[key].config;
+        StakingConfig memory config = getStakingConfig(key);
         maxStake = config.tokensForRewards * 10000000;
         uint256 residual = maxStake %
-            (config.dprOver10kk * config.lockPeriodDuration);
+            (config.dprOver10kk * config.lockPeriodDuration / 86400);
         if (residual != 0) {
             maxStake -= residual;
             if (maxStake == 0) return maxStake;
         }
-        maxStake = maxStake / (config.dprOver10kk * config.lockPeriodDuration);
+        maxStake = maxStake / (config.dprOver10kk * config.lockPeriodDuration / 86400);
         return maxStake;
     }
 
     function getNumberOfActiveConfigs() public view returns(uint256){
         return configKeys.length;
     }
+    
 }
