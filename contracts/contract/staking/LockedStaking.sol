@@ -13,7 +13,8 @@ import "./utils/ArrayBytes32.sol";
 
 contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     /**
-     * @dev
+     * @dev for detailed documentation on each function,
+     * go to interface LockedStakingInterface
      *
      */
     using SafeERC20 for ERC20;
@@ -31,7 +32,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     bytes32[] public configKeys;
 
     /**
-     * @dev in theory the contract allows different tokens for staking and 
+     * @dev in theory the contract allows different tokens for staking and
      *      rewards, however the testing functionality is only
      *      for same stake and reward tokens.
      */
@@ -60,21 +61,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     // deposit/withdraw functions
     //////////////////////////////////
 
-    /**
-     * perfom the transfer of tokens from a user to the contract
-     * and asign that amount as staked to the specific config
-     *
-     * This function requires a previously invoked approve()
-     *
-     * Stake can only be made to configurations that are
-     * in state Open.
-     *
-     * Stake is allowed only if the config has room for it.
-     *
-     *
-     * @param _configId the config id to stake to
-     * @param _amount the amount to stake
-     */
     function stake(
         bytes32 _configId,
         uint256 _amount
@@ -97,11 +83,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         config._activeUsersCounter++;
     }
 
-    /**
-     * withdraw staked tokens and rewards from a config
-     * the config must be completed
-     * @param _configId the config id to withdraw from
-     */
     function claim(bytes32 _configId) external override nonReentrant {
         require(
             getConfigState(_configId) == ConfigState.Completed,
@@ -130,11 +111,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         config._activeUsersCounter--;
     }
 
-    /**
-     * withdraw staked tokens from a config
-     * the config must be Opened, Locked or Dropped
-     * @param _configId the config id to withdraw from
-     */
     function earlyWithdraw(bytes32 _configId) external override nonReentrant {
         StakingConfigUsage storage config = configs[_configId];
         ConfigState state = getConfigState(_configId);
@@ -179,20 +155,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     function setStakingConfig(
         StakingConfig memory config
     ) external override onlyOwner returns (bytes32) {
-        /**
-         * set a new configuration for staking
-         *
-         * conditions:
-         *
-         * - lockPeriodDuration and depositPeriodDurations must be integer days
-         *      wich means, divisible by 86400
-         * - config must be unique in the pairs
-         *      (DRP, LockPeriod, DepositPeriod, startDate)
-         * - balance should be enough to lock the required tokens.
-         * - startPeriod must be at least 1 day in the future
-         * - depositPeriodDuration must be at least 1 day
-         * - lockPeriodDuration must be at least 1 week
-         */
         bytes32 key_ = getConfigKey(config);
         require(!configActive(key_), "config already exists, cannot set");
         require(
@@ -217,10 +179,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
             balance >= lockedTokens + config.tokensForRewards,
             "not enough tokens in contract"
         );
-        // console.log("block timestamp", block.timestamp);
-        // console.log("startDate should be >=", block.timestamp + 86400 - 60);
-        // we apply an offset of -60 seconds here, in case
-        // const res = await _staking.functions.configKeys();
         // if everything checks, create the config
         configs[key_].config = config;
         configKeys.push(key_);
@@ -229,60 +187,23 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     }
 
     function dropStakingConfig(bytes32 key) external override onlyOwner {
-        /**
-         * drop a staking config.
-         * This does not remove the mapping data, just unlink that data from everything else
-         * and perfom the necesarry actions to ensure no tokens are lost.
-         *
-         * sets the stakingConfigUsage.dropped to true;
-         * this means that:
-         *  - this config wont give rewards if it was in phase [3]
-         *  - this config wont allow new deposits even if it was in phase [0,1]
-         *
-         * if you want to return the tokens to its owners you must use the function
-         * distributeDroppedConfigTokens()
-         *
-         *
-         * conditions:
-         * * key must exists
-         * * config must no be already dropped
-         * * CAN ONLY BE USED BY THE OWNER
-         *
-         * @param key
-         */
         require(configActive(key), "config not found");
         require(!configs[key].dropped, "config already dropped");
         configs[key].dropped = true;
     }
 
     function flushOldConfigs() external override onlyOwner {
-        /**
-         * removes the indexes for the configs
-         * that are already finished and empty.
-         * A config is considered ready to flush when:
-         *  - it is in state completed or dropped
-         *  - it has no staked tokens
-         *
-         * the action to flush will only delete its index. The config data
-         * can be still accessed through the mapping with the getter functions
-         * if you know the key.
-         *
-         * This function is intended to free-up space in the internal list of indexes
-         * in order to reduce potencial high-gas costs when the list grows too large.
-         *
-         */
-
         // find the indexes to remove
         uint256 l = configKeys.length;
         require(l > 0, "there is no config set");
         for (uint256 i = l; i > 0; i--) {
-            bytes32 key = configKeys[i-1];
+            bytes32 key = configKeys[i - 1];
             ConfigState state = getConfigState(key);
             if (
                 configs[key]._totalStaked == 0 &&
                 (state == ConfigState.Dropped || state == ConfigState.Completed)
             ) {
-                configKeys.removeByIndex(i-1);
+                configKeys.removeByIndex(i - 1);
             }
         }
     }
@@ -291,13 +212,6 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         bytes32 key,
         uint256 tokensForRewards
     ) external override onlyOwner {
-        /**
-         * conditions:
-         * - state must be [PreOpened, Opened]
-         * - check that there are enough tokens for the update
-         * - check that the new tokensForRewards is enough to
-         *      maintain the already staked tokens (if any)
-         */
         ConfigState state = getConfigState(key);
         require(
             state == ConfigState.PreOpened || state == ConfigState.Opened,
@@ -352,6 +266,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     )
         external
         view
+        override
         returns (
             uint256 activeUsersCount,
             uint256 totalStaked,
@@ -364,14 +279,16 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         totalClaimed = usage._claimedRewards;
     }
 
-    function getConfigStakedAmount(bytes32 key) public view returns (uint256) {
+    function getConfigStakedAmount(
+        bytes32 key
+    ) public view override returns (uint256) {
         return configs[key]._totalStaked;
     }
 
     function getConfigUserStakedAmount(
         bytes32 key,
         address user
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return configs[key]._stakedPerUser[user];
     }
 
@@ -406,35 +323,31 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
         return total_;
     }
 
-    /**
-     * return the config current state
-     *
-     * @param key the config key
-     */
     function getConfigState(
         bytes32 key
     ) public view override returns (ConfigState) {
         if (isDropped(key)) return ConfigState.Dropped;
         else if (isNotSet(key)) return ConfigState.NotSet;
+        else if (!configKeys.exists(key)) return ConfigState.Dropped;
         else if (isPreOpened(key)) return ConfigState.PreOpened;
         else if (isOpened(key)) return ConfigState.Opened;
         else if (isLocked(key)) return ConfigState.Locked;
         else return ConfigState.Completed;
     }
 
-    function isDropped(bytes32 key) public view returns (bool) {
+    function isDropped(bytes32 key) public view override returns (bool) {
         return configs[key].dropped;
     }
 
-    function isNotSet(bytes32 key) public view returns (bool) {
+    function isNotSet(bytes32 key) public view override returns (bool) {
         return configs[key].config.startDate == 0;
     }
 
-    function isPreOpened(bytes32 key) public view returns (bool) {
+    function isPreOpened(bytes32 key) public view override returns (bool) {
         return block.timestamp < configs[key].config.startDate;
     }
 
-    function isOpened(bytes32 key) public view returns (bool) {
+    function isOpened(bytes32 key) public view override returns (bool) {
         uint256 ts_ = block.timestamp;
         StakingConfig memory config = getStakingConfig(key);
         return
@@ -442,7 +355,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
             ts_ < config.startDate + config.depositPeriodDuration;
     }
 
-    function isLocked(bytes32 key) public view returns (bool) {
+    function isLocked(bytes32 key) public view override returns (bool) {
         uint256 ts_ = block.timestamp;
         StakingConfig memory config = getStakingConfig(key);
         return
@@ -453,7 +366,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
                 config.lockPeriodDuration;
     }
 
-    function isCompleted(bytes32 key) public view returns (bool) {
+    function isCompleted(bytes32 key) public view override returns (bool) {
         StakingConfig memory config = getStakingConfig(key);
         return
             config.startDate +
@@ -465,7 +378,7 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
     function estimateConfigRewards(
         bytes32 key,
         uint256 stakedAmount
-    ) public view returns (uint256 expectedReward) {
+    ) public view override returns (uint256 expectedReward) {
         if (isDropped(key) || isPreOpened(key) || isNotSet(key)) return 0;
         StakingConfig memory config_ = getStakingConfig(key);
         uint256 lockDays_ = config_.lockPeriodDuration / 86400;
@@ -484,14 +397,14 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
 
     function estimateConfigTotalRewards(
         bytes32 key
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return estimateConfigRewards(key, configs[key]._totalStaked);
     }
 
     function estimateConfigUserRewards(
         bytes32 key,
         address user
-    ) external view returns (uint256) {
+    ) external view override returns (uint256) {
         return estimateConfigRewards(key, configs[key]._stakedPerUser[user]);
     }
 
@@ -501,43 +414,36 @@ contract LockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
 
     function getTotalLockedTokens() public view override returns (uint256) {
         uint256 currentLocked_ = getTotalLockedRewards();
-        if (address(_rewardToken) == address(_stakeToken)) {
+        if (isSameTokenForRewardStake()) {
             currentLocked_ += getTotalLockedStakedAmount();
         }
         return currentLocked_;
     }
 
-    function isSameTokenForRewardStake() public view returns (bool) {
+    function isSameTokenForRewardStake() public view override returns (bool) {
         return address(_rewardToken) == address(_stakeToken);
     }
 
-    /**
-     * use the formula
-     *
-     * tokensForRewards * 10000000 / (DPR * maxDays)
-     *
-     * make sure to handle trunctations
-     *
-     * @param key the configuration key to get the maxStakeTokens from
-     */
     function getMaxStakeToken(
         bytes32 key
-    ) public view returns (uint256 maxStake) {
+    ) public view override returns (uint256 maxStake) {
         if (isNotSet(key) || isDropped(key)) return maxStake;
         StakingConfig memory config = getStakingConfig(key);
         maxStake = config.tokensForRewards * 10000000;
+        // remember to transform lockPeriodDuration from seconds to days.
         uint256 residual = maxStake %
-            (config.dprOver10kk * config.lockPeriodDuration / 86400);
+            ((config.dprOver10kk * config.lockPeriodDuration) / 86400);
         if (residual != 0) {
             maxStake -= residual;
             if (maxStake == 0) return maxStake;
         }
-        maxStake = maxStake / (config.dprOver10kk * config.lockPeriodDuration / 86400);
+        maxStake =
+            maxStake /
+            ((config.dprOver10kk * config.lockPeriodDuration) / 86400);
         return maxStake;
     }
 
-    function getNumberOfActiveConfigs() public view returns(uint256){
+    function getNumberOfActiveConfigs() public view override returns (uint256) {
         return configKeys.length;
     }
-    
 }
