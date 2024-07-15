@@ -170,6 +170,7 @@ export async function deployParticipationPool(
             poolShares, // shares
             0,
             poolData, // poolData, json serialized
+            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
@@ -188,6 +189,7 @@ export async function deployRewardPool(
             poolShares, // shares
             goalAmout,
             poolData, // poolData, json serialized
+            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
@@ -208,6 +210,7 @@ export async function deployPayrollPool(
             [firstDistributionDate, nDistributions, distributionInterval],
             goalAmount,
             poolData, // poolData, json serialized
+            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
@@ -226,7 +229,8 @@ export async function deployTreasuryTypePool(
             poolUsers, // users 
             poolShares, // shares
             [firstDistributionDate, nDistributions, distributionInterval],
-            poolData, // poolData, json serialized
+            poolData, // poolData, json serialized,
+            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
