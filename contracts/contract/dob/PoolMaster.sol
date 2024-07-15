@@ -105,35 +105,11 @@ contract PoolMaster is
         return address(_proxy);
     }
 
-    /**
-     * Creates a Dob participation pool that can be
-     * configured to be a Treasury, Payroll or Reward pool.
-     *
-     * @param vars input variables required for the pool configurations, its values are:
-     *              [goalAmount, poolType, 
-     *              firstDistributionDate, nDistributions, distributionInterval,
-     *              isMainTreasury]
-     * @param users the list of initial users on the pool
-     * @param shares the shares of each user
-     * @param poolData optional initial data needed by external systems to work properly.
-     *               Expected in the form of a json serialized string. Some known keywords are:
-     *              - name: for the name of the pool, can be any string
-     *              - excludeFromPlatform: set to 1 if want to exclude this pool from platform
-     *              - mode: for the distribution mode, can be "Automatic" or "Manual"
-     */
-    function _creatGeneralParticipationPool(
+    function _createParticipationToken(
         address[] calldata users,
         uint256[] calldata shares,
-        uint256[6] memory vars,
-        string calldata poolData
-    ) internal returns (address){
-        PoolMasterConfigInterface pmConfig = PoolMasterConfigInterface(
-            getPoolMasterConfig()
-        );
-
-        ///&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-        // prepare addresses array, final result is
-        // [operationalAddress, treasuryPoolAddress, participationTokenAddress, ownerAddress]
+        bool poolIsPayroll
+    ) internal returns(address){
         ParticipationToken token = new ParticipationToken(
             "Dob Participation Token",
             "PPT"
@@ -153,13 +129,45 @@ contract PoolMaster is
             _totalShare, 
             users, 
             shares, 
-            vars[1] == uint256(PoolType.Payroll) //  pause tokens only when payroll
+            poolIsPayroll //  pause tokens only when payroll
         );
+        return address(token);
+    }
+
+    /**
+     * Creates a Dob participation pool that can be
+     * configured to be a Treasury, Payroll or Reward pool.
+     *
+     * @param vars input variables required for the pool configurations, its values are:
+     *              [goalAmount, poolType, 
+     *              firstDistributionDate, nDistributions, distributionInterval,
+     *              isMainTreasury]
+     * @param owner the list of initial users on the pool
+     * @param poolData optional initial data needed by external systems to work properly.
+     *               Expected in the form of a json serialized string. Some known keywords are:
+     *              - name: for the name of the pool, can be any string
+     *              - excludeFromPlatform: set to 1 if want to exclude this pool from platform
+     *              - mode: for the distribution mode, can be "Automatic" or "Manual"
+     */
+    function _creatGeneralParticipationPool(
+        address owner,
+        uint256[6] memory vars,
+        string calldata poolData,
+        address token
+    ) internal returns (address){
+        PoolMasterConfigInterface pmConfig = PoolMasterConfigInterface(
+            getPoolMasterConfig()
+        );
+
+        ///&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+        // prepare addresses array, final result is
+        // [operationalAddress, treasuryPoolAddress, participationTokenAddress, ownerAddress]
+
         address[4] memory _addresses = [
             pmConfig.getOperationalAddress(),
             vars[5] != 0 ? address(0) : getTreasuryPool(),
-            address(token),
-            vars[5] != 0 ? users[0] : msg.sender
+            token,
+            vars[5] != 0 ? owner : msg.sender
         ];
 
         ///&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -269,19 +277,46 @@ contract PoolMaster is
      *              - mode(ma): for the distribution mode, set to 1 to use
      *                      manual distributions, set to 0 to use automatic distributions.
      *                      If not set, assumes distribution based on poolType.
+     * @param participationToken the address of a prev. existent participation token.
+     *              if address is 0x0, then it will create a new participation token using
+     *              the inputs users and shares.
      */
     function createRewardPool(
         address[] calldata users,
         uint256[] calldata shares,
         uint256 goalAmount,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable override {
+        if (participationToken == address(0)){
+            participationToken = _createParticipationToken(
+                users, shares, true
+            );
+        }
         _creatGeneralParticipationPool(
-            users,
-            shares,
+            users[0],
             [goalAmount, uint256(PoolType.Reward), 0, 0, 0, 0],
-            poolData
+            poolData,
+            participationToken
         );
+    }
+
+    function _createPayrollPoolVars(
+        uint256[] calldata timeConfig,
+        uint256 goalAmount
+    ) internal pure returns(uint256[6] memory copyVars){
+        if (timeConfig.length == 3) {
+            copyVars = [
+                goalAmount,
+                1,
+                timeConfig[0],
+                timeConfig[1],
+                timeConfig[2],
+                0
+            ];
+        } else if (timeConfig.length == 0) {
+            copyVars = [goalAmount, uint256(PoolType.Payroll), 0, 0, 0, 0];
+        }
     }
 
     /**
@@ -315,13 +350,17 @@ contract PoolMaster is
      *              - mode(ma): for the distribution mode, set to 1 to use
      *                      manual distributions, set to 0 to use automatic distributions.
      *                      If not set, assumes distribution based on poolType.
+     * @param participationToken the address of a prev. existent participation token.
+     *              if address is 0x0, then it will create a new participation token using
+     *              the inputs users and shares.
      */
     function createPayrollPool(
         address[] calldata users,
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
         uint256 goalAmount,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable override {
         require(
             timeConfig.length == 0 || timeConfig.length == 3,
@@ -331,24 +370,16 @@ contract PoolMaster is
             goalAmount > 0,
             "for payroll pools must specify a goalAmount>0"
         );
-        uint256[6] memory copyVars;
-        if (timeConfig.length == 3) {
-            copyVars = [
-                goalAmount,
-                1,
-                timeConfig[0],
-                timeConfig[1],
-                timeConfig[2],
-                0
-            ];
-        } else if (timeConfig.length == 0) {
-            copyVars = [goalAmount, uint256(PoolType.Payroll), 0, 0, 0, 0];
+        if (participationToken == address(0)){
+            participationToken = _createParticipationToken(
+                users, shares, true
+            );
         }
         _creatGeneralParticipationPool(
-            users,
-            shares,
-            copyVars,
-            poolData
+            users[0],
+             _createPayrollPoolVars(timeConfig, goalAmount),
+            poolData,
+            participationToken
         );
     }
 
@@ -376,20 +407,28 @@ contract PoolMaster is
      *              - mode(ma): for the distribution mode, set to 1 to use
      *                      manual distributions, set to 0 to use automatic distributions.
      *                      If not set, assumes distribution based on poolType.
+     * @param participationToken the address of a prev. existent participation token.
+     *              if address is 0x0, then it will create a new participation token using
+     *              the inputs users and shares.
      */
     function createTreasuryPool(
         address[] calldata users,
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable override {
         require(
             timeConfig.length == 0 || timeConfig.length == 3,
             "timeConfig must have 0 or 3 elements"
         );
+        if (participationToken == address(0)){
+            participationToken = _createParticipationToken(
+            users, shares, false
+        );
+        }
         _creatGeneralParticipationPool(
-            users,
-            shares,
+            users[0],
             [
                 0,
                 uint256(PoolType.Treasury),
@@ -398,7 +437,8 @@ contract PoolMaster is
                 timeConfig.length == 3 ? timeConfig[2] : 0,
                 0
             ],
-            poolData
+            poolData,
+            participationToken
         );
     }
 
@@ -421,7 +461,10 @@ contract PoolMaster is
             1
         ];
         //'{"name": "Pool Master Treasury", "mode": "Manual"}'
-        address pool = _creatGeneralParticipationPool(users, shares, vars, poolData);
+        address token = _createParticipationToken(
+            users, shares, false
+        );
+        address pool = _creatGeneralParticipationPool(users[0], vars, poolData, token);
 
         _S.setAddress(_pKey(KeyPrefix.treasury), pool);
     }

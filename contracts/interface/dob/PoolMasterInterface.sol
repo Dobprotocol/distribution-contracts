@@ -15,7 +15,8 @@ interface PoolMasterInterface{
         address[] calldata users, 
         uint256[] calldata shares,
         uint256 goalAmount,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable;
 
     function createPayrollPool(
@@ -23,14 +24,16 @@ interface PoolMasterInterface{
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
         uint256 goalAmount,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable;
 
     function createTreasuryPool(
         address[] calldata users, 
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
-        string calldata poolData
+        string calldata poolData,
+        address participationToken
     ) external payable;
 
     function createPoolMasterTreasuryPool(
