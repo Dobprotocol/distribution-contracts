@@ -11,6 +11,7 @@ import "./tasks/upgradePool"
 import "./tasks/upgradePoolMaster"
 import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
+import "./tasks/deployPools"
 
 
 require('hardhat-contract-sizer');
