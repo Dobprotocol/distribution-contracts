@@ -73,6 +73,11 @@ module.exports = {
       url: process.env.ETH_SEPOLIA_URL || "",
       accounts:
         process.env.ACCOUNT_ETH_SEPOLIA?.split(",")
+    },
+    avaxfuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts:
+        process.env.ACCOUNT_AVAX_FUJI?.split(",")
     }
   },
   etherscan: {
