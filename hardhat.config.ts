@@ -5,12 +5,13 @@ import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
 
 
-import "./tasks/deployDobBase"
+import "./tasks/deploydobBase"
 import "./tasks/deployNewLogic"
 import "./tasks/upgradePool"
 import "./tasks/upgradePoolMaster"
-import "./tasks/deployDobToken"
+import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
+import "./tasks/deployPools"
 
 
 require('hardhat-contract-sizer');
@@ -72,6 +73,11 @@ module.exports = {
       url: process.env.ETH_SEPOLIA_URL || "",
       accounts:
         process.env.ACCOUNT_ETH_SEPOLIA?.split(",")
+    },
+    avaxfuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts:
+        process.env.ACCOUNT_AVAX_FUJI?.split(",")
     }
   },
   etherscan: {

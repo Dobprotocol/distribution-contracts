@@ -1,0 +1,70 @@
+{
+    "poolMaster": {
+        "deployer": {
+            "contract": "PoolMaster",
+            "address": "0xa6Dc6eb781B51Da94e470a868b71295Cd5609080"
+        },
+        "config": {
+            "contract": "PoolMasterConfig",
+            "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347"
+        },
+        "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+    },
+    "pools": [
+        {
+            "name": "eHive test 1",
+            "manual": false,
+            "nDistributions": 53,
+            "interval": 604800,
+            "users": [
+                "0xe5Da17196720AFa46994502dCFd3D4FAF70B4b58", 
+                "0x85b2294c2145274250F5c34C4f0b92A42c6a1E2a"],
+            "shares": [1,1],
+            "addToken": false
+        },
+        {
+            "name": "eHive test 2",
+            "manual": false,
+            "nDistributions": 53,
+            "interval": 604800,
+            "users": [
+                "0xe5Da17196720AFa46994502dCFd3D4FAF70B4b58", 
+                "0x67E770403F9d2208BC0544ce0efa56CF7282c1fB"],
+            "shares": [1,1],
+            "addToken": false
+        },
+        {
+            "name": "eHive test 3",
+            "manual": false,
+            "nDistributions": 53,
+            "interval": 604800,
+            "users": [
+                "0xe5Da17196720AFa46994502dCFd3D4FAF70B4b58", 
+                "0x530483ADEC1A9601916E889fCc2943A99113B40d"],
+            "shares": [1,1],
+            "addToken": false
+        },
+        {
+            "name": "eHive test 4",
+            "manual": false,
+            "nDistributions": 53,
+            "interval": 604800,
+            "users": [
+                "0xe5Da17196720AFa46994502dCFd3D4FAF70B4b58", 
+                "0x07e74c40113DBda68F7264d9950fA95C8DF45CBC"],
+            "shares": [1,1],
+            "addToken": false
+        },
+        {
+            "name": "eHive test 5",
+            "manual": false,
+            "nDistributions": 53,
+            "interval": 604800,
+            "users": [
+                "0xe5Da17196720AFa46994502dCFd3D4FAF70B4b58", 
+                "0xe648f4f9B92DEB17183c40Ba5e00021aDb4C5C7c"],
+            "shares": [1,1],
+            "addToken": false
+        }
+    ]
+}
