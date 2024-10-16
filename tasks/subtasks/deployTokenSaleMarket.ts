@@ -27,19 +27,21 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             hre, inData["contracts"]["tokenSaleMarket"], {}, false, {},
             [
                 outData["storage"]["address"],
-                {gasPrice: gasPrice}
+                // {gasPrice: gasPrice}
             ],
             accounts[inData["addressIds"]["creator"]]);
+        console.log("tokenSaleMarketLogic.address", tokenSaleMarketLogic.address)
         console.log("deploy tokenSaleMarketProxy")
         let proxy = await deployerContract(
             hre, inData["contracts"]["proxy"], {}, false, {},
             [
                 outData["storage"]["address"],
                 "TSMProxy",
-                {gasPrice: gasPrice}
+                // {gasPrice: gasPrice}
             ],
             accounts[inData["addressIds"]["creator"]]
         )
+        console.log("proxy.addres", proxy.address)
         console.log("done deploys")
         let txData;
         let resData;
@@ -53,10 +55,10 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
         txData = await storage.connect(accounts[inData["addressIds"]["creator"]])
             .functions.grantUserRole(
                 tokenSaleMarketLogic.address, 
-                {
-                    gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                    gasPrice: gasPrice
-                }
+                // {
+                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
+                //     gasPrice: gasPrice
+                // }
             );
         resData = await txData.wait();
         console.log("->grant role to proxy")
@@ -65,10 +67,10 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
         txData = await storage.connect(accounts[inData["addressIds"]["creator"]])
             .functions.grantUserRole(
                 proxy.address, 
-                {
-                    gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                    gasPrice: gasPrice
-                }
+                // {
+                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
+                //     gasPrice: gasPrice
+                // }
             );
         resData = await txData.wait();
         console.log("->initialize proxy")
@@ -77,10 +79,10 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
         txData = await proxy.connect(accounts[inData["addressIds"]["creator"]])
             .functions.initLogic(
                 tokenSaleMarketLogic.address, 
-                {
-                    gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                    gasPrice: gasPrice
-                }
+                // {
+                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
+                //     gasPrice: gasPrice
+                // }
             );
         resData = await txData.wait();
         console.log("->attach abi")
@@ -94,10 +96,10 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             .functions.initialize(
                 inData["addressIds"]["tokenSaleMarketOwner"],
                 inData["commission"]["tokenSaleMarket"]),
-                {
-                    gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                    gasPrice: gasPrice
-                }
+                // {
+                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
+                //     gasPrice: gasPrice
+                // }
         resData = await txData.wait();
 
         outData["tokenSaleMarket"] = {
