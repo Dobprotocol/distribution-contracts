@@ -144,7 +144,17 @@ OPTIONS:
 upgradeTokenSaleMarket: Upgrade a token sale market's logic to a new implementation.
 ```
 
-##
+## estimate deploy costs
+
+```sh
+Usage: hardhat [GLOBAL OPTIONS] estimateGasDeployDobBase [--input-config-file <STRING>]
+
+OPTIONS:
+
+  --input-config-file   Name of the input config to use (default: "dob_base.json")
+
+estimateGasDeployDobBase: A task to deploy base contracts for Dob enviroment
+```
 
 # Current Working Deploys
 
