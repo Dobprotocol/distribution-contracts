@@ -12,6 +12,7 @@ import "./tasks/upgradePoolMaster"
 import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 import "./tasks/deployPools"
+import "./tasks/estimateGasDeployDobBase"
 
 
 require('hardhat-contract-sizer');
@@ -78,6 +79,11 @@ module.exports = {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       accounts:
         process.env.ACCOUNT_AVAX_FUJI?.split(",")
+    },
+    base: {
+      url: "https://mainnet.base.org/",
+      accounts:
+      process.env.ACCOUNT_BASE?.split(",")
     }
   },
   etherscan: {
