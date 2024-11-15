@@ -144,7 +144,17 @@ OPTIONS:
 upgradeTokenSaleMarket: Upgrade a token sale market's logic to a new implementation.
 ```
 
-##
+## estimate deploy costs
+
+```sh
+Usage: hardhat [GLOBAL OPTIONS] estimateGasDeployDobBase [--input-config-file <STRING>]
+
+OPTIONS:
+
+  --input-config-file   Name of the input config to use (default: "dob_base.json")
+
+estimateGasDeployDobBase: A task to deploy base contracts for Dob enviroment
+```
 
 # Current Working Deploys
 
@@ -251,6 +261,116 @@ upgradeTokenSaleMarket: Upgrade a token sale market's logic to a new implementat
     "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
     "logic": {
       "address": "0x35E4A1fA9e5159f6372637F3f03749D7884eD20F",
+      "contract": "TokenSaleMarket"
+    },
+    "commission": 300
+  }
+}
+```
+
+### Avalance fuji testnet
+
+```json
+{
+  "storage": {
+    "address": "0x135C1a4271a6FfE85427261185BaE09e10FbbD23",
+    "contract": "EternalStorage",
+    "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
+  },
+  "poolMaster": {
+    "config": {
+      "address": "0xF7b794d81483C31994d572C296BBf42eF1D1AC47",
+      "contract": "PoolMasterConfig",
+      "operational": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F",
+      "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "30000000000"
+      },
+      "commission": 300
+    },
+    "deployer": {
+      "address": "0xf99320758806D2663263Ad9832F6692053d961b7",
+      "contract": "PoolMaster"
+    },
+    "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+  },
+  "poolLogic": [
+    {
+      "address": "0x3ca1C441fB6111FacEf4a7558BEB47c49A854e32",
+      "versionNumber": "1"
+    }
+  ],
+  "treasury": {
+    "address": "0xE1617bb3f17D49449d2faD89aF9bFB0947cd3ab9",
+    "ParticipationToken": {
+      "address": "0x2Fa48E477F7dCb710789F5e490f52f11C46eE342",
+      "name": "DobToken"
+    },
+    "owner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
+    "logicVersion": "1"
+  },
+  "tokenSaleMarket": {
+    "address": "0x6053B4EcED53C97f373f6271aD21E01418EAE702",
+    "contract": "LogicProxy",
+    "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
+    "logic": {
+      "address": "0x0EcDC5D3270aB6B462314A23F196d33041cC8837",
+      "contract": "TokenSaleMarket"
+    },
+    "commission": 300
+  }
+}
+```
+
+### Base Mainnet
+
+```json
+{
+  "storage": {
+    "address": "0xc2cda0C615Ac5aA8Cf2Af9B87c3C3c0ec5FefE4b",
+    "contract": "EternalStorage",
+    "owner": "0x6169C8D8070733B3866737089f891Aa0E9e608b0"
+  },
+  "poolMaster": {
+    "config": {
+      "address": "0x0c60E99E6B3C2FCc0E121eCF3cA5b7d74F5D010c",
+      "contract": "PoolMasterConfig",
+      "operational": "0x326C2610E0a97cB5e24a42059e2A2A0E41738b78",
+      "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "100000000000"
+      },
+      "commission": 300
+    },
+    "deployer": {
+      "address": "0x1e0E82B5a1D4419f71812fF020a01bc11b022ec8",
+      "contract": "PoolMaster"
+    },
+    "owner": "0x6169C8D8070733B3866737089f891Aa0E9e608b0"
+  },
+  "poolLogic": [
+    {
+      "address": "0x12A45381a0c2dF275e76e812a380abDA65255500",
+      "versionNumber": "1"
+    }
+  ],
+  "treasury": {
+    "address": "0x4A0CD5b4E10fcaf9eC01BD42c730D8114f1157F8",
+    "ParticipationToken": {
+      "address": "0xcC76048288871825D68d8492cc3B7bafeB53BE83",
+      "name": "DobToken"
+    },
+    "owner": "0xB23d7b543f814a6E12B4cFc6b221a6826B058dBE",
+    "logicVersion": "1"
+  },
+  "tokenSaleMarket": {
+    "address": "0xFdf5028D05257234044aBbb43cbA7A1Cc4FB121B",
+    "contract": "LogicProxy",
+    "owner": "0x2de047cA4211b28AE2484BC1b9741044C2028261",
+    "logic": {
+      "address": "0xb714d43FF94e8893258Fe704Ed18a2a2f186d592",
       "contract": "TokenSaleMarket"
     },
     "commission": 300
