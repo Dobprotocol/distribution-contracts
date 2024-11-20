@@ -24,6 +24,7 @@ import "../core/LogicProxiable.sol";
 
 // libs
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "hardhat/console.sol";
 
 contract PoolMaster is
@@ -105,11 +106,11 @@ contract PoolMaster is
         return address(_proxy);
     }
 
-    function _createParticipationToken(
+    function createParticipationToken(
         address[] calldata users,
         uint256[] calldata shares,
-        bool poolIsPayroll
-    ) internal returns(address){
+        bool pause
+    ) public override returns(address){
         ParticipationToken token = new ParticipationToken(
             "Dob Participation Token",
             "PPT"
@@ -129,7 +130,7 @@ contract PoolMaster is
             _totalShare, 
             users, 
             shares, 
-            poolIsPayroll //  pause tokens only when payroll
+            pause //  pause tokens, should only apply for payroll pools
         );
         return address(token);
     }
@@ -289,8 +290,8 @@ contract PoolMaster is
         address participationToken
     ) external payable override {
         if (participationToken == address(0)){
-            participationToken = _createParticipationToken(
-                users, shares, true
+            participationToken = createParticipationToken(
+                users, shares, false
             );
         }
         _creatGeneralParticipationPool(
@@ -350,17 +351,13 @@ contract PoolMaster is
      *              - mode(ma): for the distribution mode, set to 1 to use
      *                      manual distributions, set to 0 to use automatic distributions.
      *                      If not set, assumes distribution based on poolType.
-     * @param participationToken the address of a prev. existent participation token.
-     *              if address is 0x0, then it will create a new participation token using
-     *              the inputs users and shares.
      */
     function createPayrollPool(
         address[] calldata users,
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
         uint256 goalAmount,
-        string calldata poolData,
-        address participationToken
+        string calldata poolData
     ) external payable override {
         require(
             timeConfig.length == 0 || timeConfig.length == 3,
@@ -370,11 +367,9 @@ contract PoolMaster is
             goalAmount > 0,
             "for payroll pools must specify a goalAmount>0"
         );
-        if (participationToken == address(0)){
-            participationToken = _createParticipationToken(
+        address participationToken = createParticipationToken(
                 users, shares, true
             );
-        }
         _creatGeneralParticipationPool(
             users[0],
              _createPayrollPoolVars(timeConfig, goalAmount),
@@ -407,9 +402,6 @@ contract PoolMaster is
      *              - mode(ma): for the distribution mode, set to 1 to use
      *                      manual distributions, set to 0 to use automatic distributions.
      *                      If not set, assumes distribution based on poolType.
-     * @param participationToken the address of a prev. existent participation token.
-     *              if address is 0x0, then it will create a new participation token using
-     *              the inputs users and shares.
      */
     function createTreasuryPool(
         address[] calldata users,
@@ -423,9 +415,9 @@ contract PoolMaster is
             "timeConfig must have 0 or 3 elements"
         );
         if (participationToken == address(0)){
-            participationToken = _createParticipationToken(
-            users, shares, false
-        );
+            participationToken = createParticipationToken(
+                users, shares, false
+            );
         }
         _creatGeneralParticipationPool(
             users[0],
@@ -461,7 +453,7 @@ contract PoolMaster is
             1
         ];
         //'{"name": "Pool Master Treasury", "mode": "Manual"}'
-        address token = _createParticipationToken(
+        address token = createParticipationToken(
             users, shares, false
         );
         address pool = _creatGeneralParticipationPool(users[0], vars, poolData, token);

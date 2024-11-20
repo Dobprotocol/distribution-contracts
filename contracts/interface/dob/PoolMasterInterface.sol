@@ -11,6 +11,12 @@ interface PoolMasterInterface{
 
     // deploys (equivalents to createProxy)
 
+    function createParticipationToken(
+        address[] calldata users,
+        uint256[] calldata shares,
+        bool pause
+    ) external returns(address);
+
     function createRewardPool(
         address[] calldata users, 
         uint256[] calldata shares,
@@ -24,8 +30,7 @@ interface PoolMasterInterface{
         uint256[] calldata shares,
         uint256[] calldata timeConfig,
         uint256 goalAmount,
-        string calldata poolData,
-        address participationToken
+        string calldata poolData
     ) external payable;
 
     function createTreasuryPool(
