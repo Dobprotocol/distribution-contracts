@@ -210,7 +210,6 @@ export async function deployPayrollPool(
             [firstDistributionDate, nDistributions, distributionInterval],
             goalAmount,
             poolData, // poolData, json serialized
-            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
@@ -221,7 +220,8 @@ export async function deployPayrollPool(
 export async function deployTreasuryTypePool(
     _pm: Contract, _pmc: Contract, poolOwner: Signer, poolUsers: string[], poolShares: number[],
     firstDistributionDate: number, nDistributions: number = 999, 
-    distributionInterval: number = 10000, poolData: string = '{"name": "testParticipationPool"}',
+    distributionInterval: number = 10000, tokenAddress: string = ethers.constants.AddressZero, 
+    poolData: string = '{"name": "testParticipationPool"}',
     prepay: string = ethers.utils.parseUnits("0.1", "ether").toString()
 ) : Promise<Contract> {
     let txData = await _pm.connect(poolOwner)
@@ -230,7 +230,7 @@ export async function deployTreasuryTypePool(
             poolShares, // shares
             [firstDistributionDate, nDistributions, distributionInterval],
             poolData, // poolData, json serialized,
-            ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
+            tokenAddress, // with address 0, we say that a new participation token must be created
             {value: prepay}
         )
     let txRes = await txData.wait()
