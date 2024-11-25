@@ -48,6 +48,10 @@ contract TokenSaleMarket is
         uint256 spent,
         uint256 commission
     );
+    event FeeUpdate(
+        uint256 fee
+    );
+
     event SaleLockStatus(address token, address seller, bool locked);
 
     constructor(
@@ -76,6 +80,7 @@ contract TokenSaleMarket is
             _pKey(KeyPrefix.tokenSaleMarketCommission),
             _commissionFee
         );
+        emit FeeUpdate(_commissionFee);
     }
 
     function _setSaleProperties(
@@ -326,5 +331,13 @@ contract TokenSaleMarket is
                 _paaKey(KeyPrefix.tsmMinDivision, seller, tokenAddress)
             )
         );
+    }
+
+    function updateFee(uint256 newFee) public onlyOwner onlyProxy {
+        _S.setUint256(
+            _pKey(KeyPrefix.tokenSaleMarketCommission),
+            newFee
+        );
+        emit FeeUpdate(newFee);
     }
 }
