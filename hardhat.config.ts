@@ -14,6 +14,10 @@ import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 import "./tasks/deployPools"
 import "./tasks/estimateGasDeployDobBase"
+import "./tasks/getInfo"
+import "./tasks/tsmSetSale"
+import "./tasks/deployParticipationToken"
+import "./tasks/tsmBuyToken"
 
 
 require('hardhat-contract-sizer');
