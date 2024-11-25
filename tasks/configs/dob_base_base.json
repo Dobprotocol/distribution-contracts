@@ -22,7 +22,7 @@
     },
     "commission": {
         "poolMaster": 300,
-        "tokenSaleMarket": 300
+        "tokenSaleMarket": 0
     },
     "gasLimitMultiplier": 3
 }

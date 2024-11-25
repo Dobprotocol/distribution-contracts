@@ -255,16 +255,32 @@ estimateGasDeployDobBase: A task to deploy base contracts for Dob enviroment
     "owner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
     "logicVersion": "1"
   },
-  "tokenSaleMarket": {
-    "address": "0x29076a1b1Dc5d842152D74569a8d02CBb01170E3",
-    "contract": "LogicProxy",
-    "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
-    "logic": {
-      "address": "0x35E4A1fA9e5159f6372637F3f03749D7884eD20F",
-      "contract": "TokenSaleMarket"
+  "tokenSaleMarket": [
+    {
+      "address": "0x29076a1b1Dc5d842152D74569a8d02CBb01170E3",
+      "contract": "LogicProxy",
+      "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
+      "logic": {
+        "address": "0x35E4A1fA9e5159f6372637F3f03749D7884eD20F",
+        "contract": "TokenSaleMarket"
+      },
+      "commission": 0
     },
-    "commission": 300
-  }
+    {
+      "address": "0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD",
+      "contract": "LogicProxy",
+      "owner": "0x2de047cA4211b28AE2484BC1b9741044C2028261",
+      "logic": {
+        "address": "0xEB3Dfc2379B81A5Fd8dccc2405A3Cc509DfF7Ae2",
+        "contract": "TokenSaleMarket"
+      },
+      "commission": 0,
+      "storage": {
+        "address": "0x205dc1A980cC1B3b160cC8D57ee95FFed7127C3f",
+        "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
+      }
+    }
+  ]
 }
 ```
 
