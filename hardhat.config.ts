@@ -12,7 +12,15 @@ import "./tasks/upgradePoolMaster"
 import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 import "./tasks/deployPools"
-import "./tasks/deployDobLockedStaking"
+
+// staking tasks
+import "./tasks/staking/deployStaking"
+import "./tasks/staking/depositRewardStaking"
+import "./tasks/staking/configureStaking"
+import "./tasks/staking/transferOwnershipStaking"
+
+// erc20 tasks
+import "./tasks/erc20/deployToken"
 
 
 require('hardhat-contract-sizer');
