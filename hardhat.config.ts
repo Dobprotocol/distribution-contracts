@@ -98,11 +98,17 @@ module.exports = {
       url: "https://mainnet.base.org/",
       accounts:
       process.env.ACCOUNT_BASE?.split(",")
+    },
+    basesepolia: {
+      url: process.env.BASE_SEPOLIA_URL || "",
+      accounts:
+      process.env.ACCOUNT_BASE?.split(",")
     }
   },
   etherscan: {
     apiKey: {
-      base: process.env.BASE_API_KEY
+      base: process.env.BASE_API_KEY,
+      baseSepolia: process.env.BASE_API_KEY
     }
   },
   sourcify: {
