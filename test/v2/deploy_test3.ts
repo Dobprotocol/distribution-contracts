@@ -57,6 +57,7 @@ describe("Evaluate limit cases for pool master and deploys", function (){
                     [40, 30, 30], // shares,
                     [0, 999, 18000],
                     '{"name": "testParticipationPool"}', // poolData,
+                    ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
                     {value: ethers.utils.parseUnits("0.1", "ether").toString()}
             )
         ).to.be.rejectedWith("VM Exception while processing transaction: reverted with reason string 'TREASURY_POOL_NOT_CREATED'")
@@ -70,6 +71,7 @@ describe("Evaluate limit cases for pool master and deploys", function (){
                 [40, 30, 30], // shares,
                 [0, 999, 18000],
                 '{"name": "testParticipationPool"}', // poolData,
+                ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
                 {value: ethers.utils.parseUnits("0.1", "ether").toString()}
     )
     })
@@ -86,6 +88,7 @@ describe("Evaluate limit cases for pool master and deploys", function (){
                     [40, 30, 30], // shares,
                     [0, 999, 18000],
                     '{"name": "testParticipationPool"}', // poolData,
+                    ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
                     {value: ethers.utils.parseUnits("0.1", "ether").toString()}
             )
         ).to.be.rejectedWith("VM Exception while processing transaction: reverted with reason string 'TREASURY_POOL_NOT_CREATED'")

@@ -25,6 +25,38 @@ export async function deployerContract(hre, nameContract: string, libraries = {}
     return contract;
 }
 
+
+// return: Promise<BigNumber>
+// hre: Hardhat Runtime Environment (HRE)
+// signer: Signer
+export async function estimateContractGas(hre, nameContract: string, libraries = {},
+    upgradable: boolean = false, upgradeOptions = {}, deployArgs: any[] = [],
+    signer) {
+    var factoryOptions: object = {};
+    if (signer === undefined) {
+        factoryOptions = { libraries: libraries }
+    } else {
+        factoryOptions = { libraries: libraries, signer: signer };
+    }
+
+    const ContracT = await hre.ethers.getContractFactory(
+        nameContract, factoryOptions);
+    
+    let gasEstimate;
+    if (upgradable) {
+        // For upgradable contract deployment, simulate a proxy deploy and estimate gas
+        gasEstimate = await hre.upgrades.estimateGas.deployProxy(ContracT, upgradeOptions);
+    } else {
+        // For normal contracts, estimate the gas for deploying the contract
+        gasEstimate = await ContracT.signer.estimateGas(
+            ContracT.getDeployTransaction(...deployArgs)
+        );
+    }
+
+    return gasEstimate;
+}
+
+
 // return: Promise<Contract>
 // hre: Hardhat Runtime Environment (HRE)
 export async function upgradeContract(hre, nameContract: string, libraries = {},

@@ -1,8 +1,9 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import '@openzeppelin/hardhat-upgrades';
+// import "@nomicfoundation/hardhat-toolbox";
+// import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-verify";
 
 
 import "./tasks/deploydobBase"
@@ -12,6 +13,11 @@ import "./tasks/upgradePoolMaster"
 import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 import "./tasks/deployPools"
+import "./tasks/estimateGasDeployDobBase"
+import "./tasks/getInfo"
+import "./tasks/tsmSetSale"
+import "./tasks/deployParticipationToken"
+import "./tasks/tsmBuyToken"
 
 // staking tasks
 import "./tasks/staking/deployStaking"
@@ -25,7 +31,7 @@ import "./tasks/erc20/deployToken"
 
 require('hardhat-contract-sizer');
 require('dotenv').config()
-require("@nomiclabs/hardhat-etherscan");
+// require("@nomiclabs/hardhat-etherscan");
 
 const config: HardhatUserConfig = {
   solidity: "0.8.17",
@@ -87,9 +93,19 @@ module.exports = {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       accounts:
         process.env.ACCOUNT_AVAX_FUJI?.split(",")
+    },
+    base: {
+      url: "https://mainnet.base.org/",
+      accounts:
+      process.env.ACCOUNT_BASE?.split(",")
     }
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY
+    apiKey: {
+      base: process.env.BASE_API_KEY
+    }
   },
+  sourcify: {
+    enabled: true
+  }
 };
