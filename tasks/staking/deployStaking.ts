@@ -33,7 +33,7 @@ task("deployStaking", "task to deploy the smart contract to manage locked stakin
                 taskArgs.stakeToken,
                 taskArgs.rewardToken
             ], signer);
-
+        console.log("deployed contract address is:", lockedStaking.address)
         // write output file
         let data = {
             "contract": {
@@ -46,6 +46,7 @@ task("deployStaking", "task to deploy the smart contract to manage locked stakin
             },
             "configurations": []
         }
+        console.log("writing data", data)
         fs.writeFileSync(outputConfigFile, JSON.stringify(data, null, 2))
         
     })
