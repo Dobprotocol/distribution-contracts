@@ -1,0 +1,19 @@
+{
+  "contract": {
+    "address": "0x43CC644c2484884Ba791Ac1abd9f2a9473a0a18A",
+    "tokens": {
+      "stake": "0xFdf5028D05257234044aBbb43cbA7A1Cc4FB121B",
+      "reward": "0xbF50c9599e5e64eb10fDcDc14C804a9de8e42014"
+    },
+    "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
+  },
+  "configurations": [
+    {
+      "dprOver10kk": 5000,
+      "tokensForRewards": "1000000000000000000",
+      "lockPeriodDuration": 17280000,
+      "depositPeriodDuration": 5184000,
+      "startDate": 1734912000
+    }
+  ]
+}
