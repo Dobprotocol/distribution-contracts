@@ -33,12 +33,14 @@ task("configureStaking", "task to configure a new  locked staking setting.")
             path.join(outputConfigFile), 'utf8'));
         
         const accounts = await hre.ethers.getSigners();
-        const signer = getSigner(taskArgs.fromAddress, accounts);
-
+        const signer = getSigner(data["contract"]["owner"], accounts);
+        const dayInSeconds = 86400
         const totalReward = hre.ethers.utils.parseEther(taskArgs.totalReward).toString()
-        const lockPeriod = Math.floor(Number(taskArgs.lockPeriod)) * 86400
-        const depositPeriod = Math.floor(Number(taskArgs.depositPeriod)) * 86400
+        const lockPeriod = Math.floor(Number(taskArgs.lockPeriod)) * dayInSeconds
+        const depositPeriod = Math.floor(Number(taskArgs.depositPeriod)) * dayInSeconds
         const startDate = Math.floor(Number(taskArgs.startDate))
+        let humanStartDate = new Date(0)
+        humanStartDate.setUTCSeconds(startDate)
         const dpr = Math.floor(Number(taskArgs.dpr))
         
         const today = (new Date().getTime())/1000
@@ -46,15 +48,19 @@ task("configureStaking", "task to configure a new  locked staking setting.")
             throw new Error("StartDate cannot be before today");
         }
 
-        console.log("::: CREATING THE FOLLOWING STAKING CONFIGURATION :::")
+
+
+        console.log("::: THE FOLLOWING STAKING CONFIGURATION WILL BE CREATED:::")
         console.log("-> staking contract:", data["contract"]["address"])
-        console.log("-> total Rewards (wei): ", totalReward)
-        console.log("-> Lock period (seconds):", lockPeriod)
-        console.log("-> deposit period (seconds):", depositPeriod)
-        console.log("-> start Date (epoch):", startDate)
+        console.log("-> total Rewards (wei): ", totalReward, "| ether:", taskArgs.totalReward)
+        console.log("-> Lock period (seconds):", lockPeriod, "| days:", lockPeriod/dayInSeconds)
+        console.log("-> deposit period (seconds):", depositPeriod, " | days:", depositPeriod/dayInSeconds)
+        console.log("-> start Date (epoch):", startDate, "| human:", humanStartDate)
         console.log("-> DPR (percent):", dpr/100000)
-        console.log("==-> APR (percent):", dpr * 365 / 100000)
-        console.log("==-> total rewards percent over the lock period:", lockPeriod * dpr / (100000 * 86400))
+        console.log("==-> total rewards percent over the lock period:", lockPeriod * dpr / (100000 * dayInSeconds))
+        console.log(":::: YOU HAVE 30 SECONDS TO CANCEL THIS CONFIGURATION ::::")
+        await new Promise(f => setTimeout(f, 30000));
+        console.log("\nEXECUTING CONFIGURATION...")
         
         // get staking contract
         const staking = await contractAt(
@@ -62,14 +68,19 @@ task("configureStaking", "task to configure a new  locked staking setting.")
             data["contract"]["address"]);
 
         // set the configuration
+        const config = {
+            "dprOver10kk": dpr,
+            "tokensForRewards": totalReward,
+            "lockPeriodDuration": lockPeriod,
+            "depositPeriodDuration": depositPeriod,
+            "startDate": startDate
+        }
+
         let tx = await staking.connect(signer)
-            .functions.setStakingConfig({
-                "dprOver10kk": dpr,
-                "tokensForRewards": totalReward,
-                "lockPeriodDuration": lockPeriod,
-                "depositPeriodDuration": depositPeriod,
-                "startDate": startDate
-            })
+            .functions.setStakingConfig(config)
         let res = await tx.wait()
-        
+
+        // save to file
+        data["configurations"].push(config)
+        fs.writeFileSync(outputConfigFile, JSON.stringify(data, null, 2))
     })
