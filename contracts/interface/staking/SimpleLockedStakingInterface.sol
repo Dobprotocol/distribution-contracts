@@ -16,17 +16,15 @@ interface SimpleLockedStakingInterface {
      * Stake is allowed only if the config has room for it.
      *
      *
-     * @param _configId the config id to stake to
      * @param _amount the amount to stake
      */
-    function stake(bytes32 _configId, uint256 _amount) external;
+    function stake(uint256 _amount) external;
 
     /**
      * withdraw staked tokens and rewards from a config
      * the config must be completed
-     * @param _configId the config id to withdraw from
      */
-    function claim(bytes32 _configId) external;
+    function claim() external;
 
 
     /**

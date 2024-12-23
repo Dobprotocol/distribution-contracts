@@ -73,7 +73,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     //////////////////////////////////
 
     function stake(
-        bytes32 _configId,
         uint256 _amount
     ) external override nonReentrant {
         require(
@@ -94,7 +93,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         emit StakeTokens(msg.sender, _amount);
     }
 
-    function claim(bytes32 _configId) external override nonReentrant {
+    function claim() external override nonReentrant {
         require(
             getConfigState() == ConfigState.Completed,
             "config must be in state Completed"
