@@ -43,6 +43,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
     uint256 private _activeUsersCounter; // Number of active users with staked tokens
     uint256 private _totalStaked; // Total staked tokens
     uint256 private _claimedRewards; // Total claimed rewards
+    uint256 private _withdrawRemainingRewards; // records the withdraw remaining rewards
     mapping(address => uint256) private _stakedPerUser; // Mapping of user addresses to staked amounts
 
     // Staking configuration
@@ -204,6 +205,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
         uint256 withdrawTokens = getRewardTokenBalance() -
             getTotalLockedRewards();
         rewardToken.safeTransfer(msg.sender, withdrawTokens);
+        _withdrawRemainingRewards += withdrawTokens;
         emit WithdrawRemains(withdrawTokens);
     }
 
@@ -260,7 +262,10 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
      * @return activeUsersCount the number distinct unique address that have staked tokens
      * @return totalStaked the total amount of staked tokens
      * @return totalClaimed the total amount of claimed reward tokens
+     * @return totalWithdrawRemains the total amount of withdraw rewards tokens by the owner.
+     *                              These are tokens that were not used for the staking.
      * @return rewardBalance the current smart-contract balance of the reward tokens
+     * @return maxStake the maximum allowed stake amount for this staking.
      */
     function getConfigUsageData()
         external
@@ -269,13 +274,17 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
             uint256 activeUsersCount,
             uint256 totalStaked,
             uint256 totalClaimed,
-            uint256 rewardBalance
+            uint256 totalWithdrawRemains,
+            uint256 rewardBalance,
+            uint256 maxStake
         )
     {
         activeUsersCount = _activeUsersCounter;
         totalStaked = _totalStaked;
         totalClaimed = _claimedRewards;
         rewardBalance = getRewardTokenBalance();
+        totalWithdrawRemains = _withdrawRemainingRewards;
+        maxStake = estimateStake(totalClaimed + rewardBalance + totalWithdrawRemains);
     }
 
     /**
