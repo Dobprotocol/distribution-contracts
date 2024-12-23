@@ -60,6 +60,10 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     event WithdrawRemains(uint256 amount);
 
     constructor(ERC20 stakingToken, ERC20 rewardsToken) {
+        require (
+            address(stakingToken) != address(rewardsToken),
+            "stake and reward tokens must be different"
+        );
         _stakeToken = stakingToken;
         _rewardToken = rewardsToken;
     }
@@ -110,18 +114,9 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 stakedAmount = _stakedPerUser[msg.sender];
         require(stakedAmount > 0, "user does not have staked tokens");
         uint256 expectedReward = estimateConfigRewards(stakedAmount);
-        if (isSameTokenForRewardStake()) {
-            // same token, make only 1 transaction
-            _safeTransfer(
-                _stakeToken,
-                msg.sender,
-                stakedAmount + expectedReward
-            );
-        } else {
-            // different token, make 2 transactions
-            _safeTransfer(_stakeToken, msg.sender, stakedAmount);
-            _safeTransfer(_rewardToken, msg.sender, expectedReward);
-        }
+        // different token, make 2 transactions
+        _safeTransfer(_stakeToken, msg.sender, stakedAmount);
+        _safeTransfer(_rewardToken, msg.sender, expectedReward);
         // make the variables updates
         _stakedPerUser[msg.sender] = 0;
         _totalStaked -= stakedAmount;
@@ -171,12 +166,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         require(
             config.depositPeriodDuration % 86400 == 0,
             "depositPeriodDuration must be divisible by 86400"
-        );
-        uint256 balance = _rewardToken.balanceOf(address(this));
-        uint256 lockedTokens = getTotalLockedTokens();
-        require(
-            balance >= lockedTokens + config.tokensForRewards,
-            "not enough tokens in contract"
         );
         // if everything checks, create the config
         config_ = config;
@@ -312,16 +301,9 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     }
 
     function getTotalLockedTokens() public view override returns (uint256) {
-        uint256 currentLocked_ = getTotalLockedRewards();
-        if (isSameTokenForRewardStake()) {
-            currentLocked_ += getTotalLockedStakedAmount();
-        }
-        return currentLocked_;
+        return getTotalLockedRewards();
     }
 
-    function isSameTokenForRewardStake() public view override returns (bool) {
-        return address(_rewardToken) == address(_stakeToken);
-    }
 
     function getMaxStakeToken() public view override returns (uint256 maxStake) {
         if (isNotSet()) return maxStake;

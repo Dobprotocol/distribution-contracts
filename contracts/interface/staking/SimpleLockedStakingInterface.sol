@@ -211,21 +211,15 @@ interface SimpleLockedStakingInterface {
 
     /**
      * return the total amount of locked tokens from the reward tokens.
-     * if the reward tokens and staking tokens are the same, this function
-     * will also include the staked amounts from all the configurations.
      */
     function getTotalLockedTokens() external view returns (uint256);
 
-    /**
-     * check if the reward token is the same as the stake token.
-     */
-    function isSameTokenForRewardStake() external view returns (bool);
 
     /**
      * return the estimated max amount of stake tokens
      * allowed in a configuration, this computation is based in the formula
      *
-     * tokensForRewards * 10000000 / (DPROver10kk * maxDays)
+     * rewardTokenBalance * 10000 / RewardRateOver10k
      *
      * where the implementation makes sure to handle the respective truncations
      * so the numbers are divisibles.
