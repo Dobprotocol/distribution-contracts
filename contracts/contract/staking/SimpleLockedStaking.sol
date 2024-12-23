@@ -223,10 +223,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     // getter functions
     //////////////////////////////////
 
-    function getStakingConfig() public view override returns (StakingConfig memory) {
-        return config_;
-    }
-
     function getConfigUsageData()
         external
         view
@@ -293,29 +289,26 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     function isOpened() public view override returns (bool) {
         uint256 ts_ = block.timestamp;
-        StakingConfig memory config = getStakingConfig();
         return
-            config.startDate <= ts_ &&
-            ts_ < config.startDate + config.depositPeriodDuration;
+            config_.startDate <= ts_ &&
+            ts_ < config_.startDate + config_.depositPeriodDuration;
     }
 
     function isLocked() public view override returns (bool) {
         uint256 ts_ = block.timestamp;
-        StakingConfig memory config = getStakingConfig();
         return
-            config.startDate + config.depositPeriodDuration <= ts_ &&
+            config_.startDate + config_.depositPeriodDuration <= ts_ &&
             ts_ <
-            config.startDate +
-                config.depositPeriodDuration +
-                config.lockPeriodDuration;
+            config_.startDate +
+                config_.depositPeriodDuration +
+                config_.lockPeriodDuration;
     }
 
     function isCompleted() public view override returns (bool) {
-        StakingConfig memory config = getStakingConfig();
         return
-            config.startDate +
-                config.depositPeriodDuration +
-                config.lockPeriodDuration <=
+            config_.startDate +
+                config_.depositPeriodDuration +
+                config_.lockPeriodDuration <=
             block.timestamp;
     }
 

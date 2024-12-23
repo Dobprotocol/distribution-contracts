@@ -77,9 +77,6 @@ interface SimpleLockedStakingInterface {
     //////////////////////////////////
 
 
-    function getStakingConfig(
-    ) external view returns (StakingConfig memory);
-
     /**
      *
      * @return activeUsersCount the number of active users in the config
