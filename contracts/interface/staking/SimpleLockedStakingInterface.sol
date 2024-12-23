@@ -63,22 +63,6 @@ interface SimpleLockedStakingInterface {
         StakingConfig memory config
     ) external returns (bytes32);
 
-    /**
-     * removes the indexes for the configs
-     * that are already finished and empty.
-     * A config is considered ready to flush when:
-     *  - it has no staked tokens
-     *
-     * the action to flush will only delete its index. The config data
-     * can be still accessed through the mapping with the getter functions
-     * if you know the key.
-     *
-     * This function is intended to free-up space in the internal list of indexes
-     * in order to reduce potencial high-gas costs when the list grows too large.
-     *
-     * CAN ONLY BE USED BY THE OWNER
-     */
-    function flushOldConfigs() external;
 
     /**
      * update the amounts of tokens for rewards

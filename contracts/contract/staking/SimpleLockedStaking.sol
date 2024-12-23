@@ -221,23 +221,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         return key_;
     }
 
-    function flushOldConfigs() external override onlyOwner {
-        // find the indexes to remove
-        uint256 l = configKeys.length;
-        require(l > 0, "there is no config set");
-        for (uint256 i = l; i > 0; i--) {
-            bytes32 key = configKeys[i - 1];
-            ConfigState state = getConfigState(key);
-            if (
-                configs[key]._totalStaked == 0 &&
-                (state == ConfigState.Dropped || state == ConfigState.Completed)
-            ) {
-                configKeys.removeByIndex(i - 1);
-                emit ConfigRemove(key);
-            }
-        }
-    }
-
     function updateStakingConfig(
         bytes32 key,
         uint256 tokensForRewards
