@@ -132,7 +132,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         // totalStaked + totalClaimableRewards
         uint256 lockedTokens = getTotalLockedTokens();
         // we need to subtract that from the balance
-        uint256 balance = _rewardToken.balanceOf(address(this));
+        uint256 balance = getRewardTokenBalance();
         require(
             balance >= lockedTokens,
             "balace is lower than the locked tokens, warning!!!"
@@ -219,7 +219,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         // if state is [PreOpened, Opened]
         ConfigState state = getConfigState();
         if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
-            return _rewardToken.balanceOf(address(this));
+            return getRewardTokenBalance();
         } else {
             // case phase >= 0 (in [2,3])
             // use formula
@@ -297,14 +297,13 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         return estimateConfigRewards(_stakedPerUser[user]);
     }
 
-    function getTotalLockedTokens() public view override returns (uint256) {
-        return getTotalLockedRewards();
+    function getRewardTokenBalance() public view returns (uint256){
+        return _rewardToken.balanceOf(address(this));
     }
-
 
     function getMaxStakeToken() public view override returns (uint256 maxStake) {
         if (isNotSet()) return maxStake;
-        maxStake = _rewardToken.balanceOf(address(this)) * REWARD_FACTOR;
+        maxStake = getRewardTokenBalance() * REWARD_FACTOR;
         // remember to transform lockPeriodDuration from seconds to days.
         uint256 residual = maxStake % config_.rewardRateOver10k;
         if (residual != 0) {
