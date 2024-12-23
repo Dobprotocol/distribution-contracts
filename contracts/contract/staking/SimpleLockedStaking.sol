@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./utils/ArrayBytes32.sol";
 
+
+
 contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, ReentrancyGuard {
     /**
      * @dev for detailed documentation on each function,
@@ -20,9 +22,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     using SafeERC20 for ERC20;
     using ArrayBytes32 for bytes32[];
 
-
-    StakingConfigUsage private _config;
-
     /**
      * @dev in theory the contract allows different tokens for staking and
      *      rewards, however the testing functionality is only
@@ -30,6 +29,16 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
      */
     ERC20 private immutable _stakeToken;
     ERC20 private immutable _rewardToken;
+
+
+    // metrics
+    uint256 _activeUsersCounter;
+    uint256 _totalStaked;
+    uint256 _claimedRewards;
+    mapping(address => uint256) _stakedPerUser;
+
+    // config
+    StakingConfig private config_;
 
     //////////////////////////////////
     // events
@@ -81,15 +90,15 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         );
         uint256 maxStake = getMaxStakeToken();
         require(
-            _config._totalStaked + _amount <= maxStake,
+            _totalStaked + _amount <= maxStake,
             "cannot stake more than the allowed amount"
         );
         _stakeToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         // update variables
-        _config._stakedPerUser[msg.sender] += _amount;
-        _config._totalStaked += _amount;
-        _config._activeUsersCounter++;
+        _stakedPerUser[msg.sender] += _amount;
+        _totalStaked += _amount;
+        _activeUsersCounter++;
         emit StakeTokens(msg.sender, _amount);
     }
 
@@ -98,7 +107,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             getConfigState() == ConfigState.Completed,
             "config must be in state Completed"
         );
-        uint256 stakedAmount = _config._stakedPerUser[msg.sender];
+        uint256 stakedAmount = _stakedPerUser[msg.sender];
         require(stakedAmount > 0, "user does not have staked tokens");
         uint256 expectedReward = estimateConfigRewards(stakedAmount);
         if (isSameTokenForRewardStake()) {
@@ -114,10 +123,10 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             _safeTransfer(_rewardToken, msg.sender, expectedReward);
         }
         // make the variables updates
-        _config._stakedPerUser[msg.sender] = 0;
-        _config._totalStaked -= stakedAmount;
-        _config._claimedRewards += expectedReward;
-        _config._activeUsersCounter--;
+        _stakedPerUser[msg.sender] = 0;
+        _totalStaked -= stakedAmount;
+        _claimedRewards += expectedReward;
+        _activeUsersCounter--;
         emit ClaimTokens(msg.sender, stakedAmount, expectedReward);
     }
 
@@ -170,7 +179,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             "not enough tokens in contract"
         );
         // if everything checks, create the config
-        _config.config = config;
+        config_ = config;
         emit ConfigSet(
             config.dprOver10kk,
             config.tokensForRewards,
@@ -191,7 +200,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 currentBalance_ = _rewardToken.balanceOf(address(this));
         uint256 currentLocked_ = getTotalLockedTokens();
         // substract the current tokensForRewards
-        currentLocked_ -= _config.config.tokensForRewards;
+        currentLocked_ -= config_.tokensForRewards;
         // add the new propossed tokensForRewads
         currentLocked_ += tokensForRewards;
         // check that we can lock that amount;
@@ -205,7 +214,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             "cannot update tokensForReward, new ballance would be lower than required based on staked amount."
         );
         // update
-        _config.config.tokensForRewards = tokensForRewards;
+        config_.tokensForRewards = tokensForRewards;
         emit ConfigUpdate(tokensForRewards);
     }
 
@@ -214,7 +223,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     //////////////////////////////////
 
     function getStakingConfig() public view override returns (StakingConfig memory) {
-        return _config.config;
+        return config_;
     }
 
     function getConfigUsageData()
@@ -227,20 +236,19 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             uint256 totalClaimed
         )
     {
-        StakingConfigUsage storage usage = _config;
-        activeUsersCount = usage._activeUsersCounter;
-        totalStaked = usage._totalStaked;
-        totalClaimed = usage._claimedRewards;
+        activeUsersCount = _activeUsersCounter;
+        totalStaked = _totalStaked;
+        totalClaimed = _claimedRewards;
     }
 
     function getConfigStakedAmount() public view override returns (uint256) {
-        return _config._totalStaked;
+        return _totalStaked;
     }
 
     function getConfigUserStakedAmount(
         address user
     ) public view override returns (uint256) {
-        return _config._stakedPerUser[user];
+        return _stakedPerUser[user];
     }
 
     function getTotalLockedStakedAmount()
@@ -257,7 +265,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         ConfigState state = getConfigState();
         if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
             // use tokensForRewards
-            return _config.config.tokensForRewards;
+            return config_.tokensForRewards;
         } else {
             // case phase >= 0 (in [2,3])
             // use formula
@@ -275,11 +283,11 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
 
     function isNotSet() public view override returns (bool) {
-        return _config.config.startDate == 0;
+        return config_.startDate == 0;
     }
 
     function isPreOpened() public view override returns (bool) {
-        return block.timestamp < _config.config.startDate;
+        return block.timestamp < config_.startDate;
     }
 
     function isOpened() public view override returns (bool) {
@@ -330,13 +338,13 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     }
 
     function estimateConfigTotalRewards() public view override returns (uint256) {
-        return estimateConfigRewards(_config._totalStaked);
+        return estimateConfigRewards(_totalStaked);
     }
 
     function estimateConfigUserRewards(
         address user
     ) external view override returns (uint256) {
-        return estimateConfigRewards(_config._stakedPerUser[user]);
+        return estimateConfigRewards(_stakedPerUser[user]);
     }
 
     function getTotalLockedTokens() public view override returns (uint256) {
