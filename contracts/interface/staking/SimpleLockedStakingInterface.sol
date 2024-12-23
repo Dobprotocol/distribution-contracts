@@ -28,12 +28,6 @@ interface SimpleLockedStakingInterface {
      */
     function claim(bytes32 _configId) external;
 
-    /**
-     * withdraw staked tokens from a config
-     * the config must be Opened, Locked or Dropped
-     * @param _configId the config id to withdraw from
-     */
-    function earlyWithdraw(bytes32 _configId) external;
 
     /**
      * withdraw any non-locked token
@@ -165,19 +159,18 @@ interface SimpleLockedStakingInterface {
     /**
      * returns the config current state, which can be:
      * * notSet: when the config does not exists:
-     *      - not working functions: stake(), claim(), earlyWithdraw()
+     *      - not working functions: stake(), claim()
      * * PreOpened: when the config was recenlty set and has not open yet.
-     *      - not working functions: claim(), stake(), earlyWithdraw()
+     *      - not working functions: claim(), stake()
      * * Opened: when the config started to receive deposits.
      *      - not working functions: claim()
-     *      - working functions: stake(), earlyWithdraw()
+     *      - working functions: stake()
      * * Locked: when the config stopped receiving deposits
      *      and is in stake-mode.
      *      - not working functions: stake(), claim()
-     *      - working functions: earlyWithdraw()
      * * Completed: when the stake-mode is completed and rewards can
      *      be claimed.
-     *      - not working functions: stake(), earlyWithdraw()
+     *      - not working functions: stake()
      *      - working functions: claim()
      *
      * @param key the config encoded-unique key

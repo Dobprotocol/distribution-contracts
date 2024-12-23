@@ -60,7 +60,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 amountStake,
         uint256 amountReward
     );
-    event EarlyWithdrawTokens(bytes32 key, address user, uint256 amount);
     event WithdrawRemains(uint256 amount);
 
     constructor(ERC20 stakingToken, ERC20 rewardsToken) {
@@ -135,26 +134,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         config._claimedRewards += expectedReward;
         config._activeUsersCounter--;
         emit ClaimTokens(_configId, msg.sender, stakedAmount, expectedReward);
-    }
-
-    function earlyWithdraw(bytes32 _configId) external override nonReentrant {
-        StakingConfigUsage storage config = configs[_configId];
-        ConfigState state = getConfigState(_configId);
-        require(
-            state == ConfigState.Opened ||
-                state == ConfigState.Locked ||
-                state == ConfigState.Dropped,
-            "config must be in state [Opened, Locked, Dropped]"
-        );
-        uint256 stakedAmount = config._stakedPerUser[msg.sender];
-        require(stakedAmount > 0, "user has no staked tokens");
-        _safeTransfer(_stakeToken, msg.sender, stakedAmount);
-
-        // update variables
-        config._stakedPerUser[msg.sender] = 0;
-        config._totalStaked -= stakedAmount;
-        config._activeUsersCounter--;
-        emit EarlyWithdrawTokens(_configId, msg.sender, stakedAmount);
     }
 
     /**
