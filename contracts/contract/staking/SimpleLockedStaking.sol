@@ -44,7 +44,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     //////////////////////////////////
     // events
     //////////////////////////////////
-    event ConfigUpdate(uint256 newTokensForReward);
     event ConfigSet(
         uint256 rewardRateOver10k,
         uint256 tokensForRewards,
