@@ -1,45 +1,43 @@
 // SPDX-License-Identifier: BSL-1.0
 pragma solidity >=0.8.0 <0.9.0;
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "../../interface/staking/SimpleLockedStakingInterface.sol";
-import "../../types/SimpleStakingConfig.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-// import "hardhat/console.sol";
 
-import "./utils/ArrayBytes32.sol";
-
-
-
-contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, ReentrancyGuard {
-    /**
-     * @dev for detailed documentation on each function,
-     * go to interface LockedStakingInterface
-     *
-     */
+contract SimpleLockedStaking is Ownable, ReentrancyGuard {
     using SafeERC20 for ERC20;
-    using ArrayBytes32 for bytes32[];
 
-    /**
-     * @dev in theory the contract allows different tokens for staking and
-     *      rewards, however the testing functionality is only
-     *      for same stake and reward tokens.
-     */
+    // struct used to facilitate handling of staking configuration
+    struct StakingConfig {
+        uint256 rewardRate;
+        uint256 lockDays;
+        uint256 depositDays;
+        uint256 startDate;
+    }
+
+    // enumeration used to facilitate handling of states
+    enum ConfigState {
+        Opened,
+        Locked,
+        Completed,
+        NotSet
+    }
+
+    // erc20 tokens
     ERC20 private immutable _stakeToken;
     ERC20 private immutable _rewardToken;
 
-
-    // metrics
+    // usage variables
     uint256 _activeUsersCounter;
     uint256 _totalStaked;
     uint256 _claimedRewards;
     mapping(address => uint256) _stakedPerUser;
 
     // config
-    StakingConfig private config_;
+    StakingConfig private C;
     uint256 private constant REWARD_FACTOR = 10000;
+    uint256 private constant DAY_TO_SECONDS = 86400;
 
     //////////////////////////////////
     // events
@@ -51,15 +49,39 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 startDate
     );
     event StakeTokens(address user, uint256 amount);
-    event ClaimTokens(
-        address user,
-        uint256 amountStake,
-        uint256 amountReward
-    );
+    event ClaimTokens(address user, uint256 amountStake, uint256 amountReward);
     event WithdrawRemains(uint256 amount);
 
+    //////////////////////////////////
+    // modifiers
+    //////////////////////////////////
+
+    modifier isCompleted() {
+        require(
+            getState() == ConfigState.Completed,
+            "Config state must be Completed"
+        );
+        _;
+    }
+
+    modifier isOpened() {
+        require(
+            getState() == ConfigState.Opened,
+            "Config state must be Opened"
+        );
+        _;
+    }
+
+    modifier isNotSet() {
+        require(
+            getState() == ConfigState.NotSet,
+            "Config state must be NotSet"
+        );
+        _;
+    }
+
     constructor(ERC20 stakingToken, ERC20 rewardsToken) {
-        require (
+        require(
             address(stakingToken) != address(rewardsToken),
             "stake and reward tokens must be different"
         );
@@ -84,14 +106,14 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     // deposit/withdraw functions
     //////////////////////////////////
 
-    function stake(
-        uint256 _amount
-    ) external override nonReentrant {
-        require(
-            getConfigState() == ConfigState.Opened,
-            "config must be in state Opened"
-        );
-        uint256 maxStake = getMaxStakeToken();
+    /**
+     * Stake the specified amount and link it to the msg.user
+     * This function can only be used when the stake is in state Opened
+     *
+     * @param _amount the amount to stake
+     */
+    function stake(uint256 _amount) external nonReentrant isOpened {
+        uint256 maxStake = estimateStake(getRewardTokenBalance());
         require(
             _totalStaked + _amount <= maxStake,
             "cannot stake more than the allowed amount"
@@ -105,17 +127,23 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         emit StakeTokens(msg.sender, _amount);
     }
 
-    function claim() external override nonReentrant {
+    /**
+     * Claim the staked and reward tokens for the msg.user
+     * This function can only be used when the stake is in state Completed
+     */
+    function claim() external nonReentrant isCompleted {
+        uint256 stakedAmount = getUserStakedAmount(msg.sender);
+        require(stakedAmount > 0, "User does not have staked tokens");
+        uint256 expectedReward = estimateRewards(stakedAmount);
         require(
-            getConfigState() == ConfigState.Completed,
-            "config must be in state Completed"
+            getRewardTokenBalance() > expectedReward,
+            "Not enough reward tokens"
         );
-        uint256 stakedAmount = _stakedPerUser[msg.sender];
-        require(stakedAmount > 0, "user does not have staked tokens");
-        uint256 expectedReward = estimateConfigRewards(stakedAmount);
-        // different token, make 2 transactions
+
+        // transfer the tokens
         _safeTransfer(_stakeToken, msg.sender, stakedAmount);
         _safeTransfer(_rewardToken, msg.sender, expectedReward);
+
         // make the variables updates
         _stakedPerUser[msg.sender] = 0;
         _totalStaked -= stakedAmount;
@@ -125,19 +153,13 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     }
 
     /**
-     * withdraw any non-locked token
+     * withdraw any non-locked reward token
+     *
+     * The withdrawal can only be executed when the stake is on state Completed.
      */
-    function withdrawRemains() external override onlyOwner nonReentrant {
-        // the locked tokens are
-        // totalStaked + totalClaimableRewards
-        uint256 lockedTokens = getTotalLockedTokens();
-        // we need to subtract that from the balance
-        uint256 balance = getRewardTokenBalance();
-        require(
-            balance >= lockedTokens,
-            "balace is lower than the locked tokens, warning!!!"
-        );
-        uint256 withdrawTokens = balance - lockedTokens;
+    function withdrawRemains() external onlyOwner nonReentrant isCompleted {
+        uint256 withdrawTokens = getRewardTokenBalance() -
+            getTotalLockedRewards();
         require(withdrawTokens > 0, "no tokens available to withdraw");
         _safeTransfer(_rewardToken, msg.sender, withdrawTokens);
         emit WithdrawRemains(withdrawTokens);
@@ -147,171 +169,166 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     // config functions
     //////////////////////////////////
 
-    function setStakingConfig(
+    /**
+     * set the staking config.
+     * This function can only be called once, since after the configuration is set, the state
+     * will no longer be NotSet.
+     *
+     * @param config the configuration to set
+     */
+    function setConfig(
         StakingConfig memory config
-    ) external override onlyOwner {
+    ) external onlyOwner isNotSet {
         require(
-            config.lockPeriodDuration >= 86400 * 7,
+            config.lockDays >= 7,
             "lockPeriodDuration must be at least 1 week"
         );
         require(
-            config.depositPeriodDuration >= 86400,
+            config.depositDays >= 1,
             "depositPeriodDuration must be at least 1 day"
         );
         require(
-            config.lockPeriodDuration % 86400 == 0,
-            "LockPeriodDuration must be divisible by 86400"
-        );
-        require(
-            config.depositPeriodDuration % 86400 == 0,
-            "depositPeriodDuration must be divisible by 86400"
+            config.startDate >= block.timestamp,
+            "StartDate must be at least the same as the current block timestamp"
         );
         // if everything checks, create the config
-        config_ = config;
+        C = config;
         emit ConfigSet(
-            config.rewardRateOver10k,
-            config.lockPeriodDuration,
-            config.depositPeriodDuration,
+            config.rewardRate,
+            config.lockDays,
+            config.depositDays,
             config.startDate
         );
     }
 
+    /**
+     * returns the configuration parameters used for the staking.
+     */
+    function getConfig() external view returns (StakingConfig memory) {
+        return C;
+    }
 
     //////////////////////////////////
     // getter functions
     //////////////////////////////////
 
+    /**
+     * returns the current configuration usage data
+     *
+     * @return activeUsersCount the number distinct unique address that have staked tokens
+     * @return totalStaked the total amount of staked tokens
+     * @return totalClaimed the total amount of claimed reward tokens
+     * @return rewardBalance the current smart-contract balance of the reward tokens
+     */
     function getConfigUsageData()
         external
         view
-        override
         returns (
             uint256 activeUsersCount,
             uint256 totalStaked,
-            uint256 totalClaimed
+            uint256 totalClaimed,
+            uint256 rewardBalance
         )
     {
         activeUsersCount = _activeUsersCounter;
         totalStaked = _totalStaked;
         totalClaimed = _claimedRewards;
+        rewardBalance = getRewardTokenBalance();
     }
 
-    function getConfigStakedAmount() public view override returns (uint256) {
-        return _totalStaked;
-    }
-
-    function getConfigUserStakedAmount(
-        address user
-    ) public view override returns (uint256) {
+    /**
+     * @param user gets the total staked amount for this user
+     */
+    function getUserStakedAmount(address user) public view returns (uint256) {
         return _stakedPerUser[user];
     }
 
-    function getTotalLockedStakedAmount()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return getConfigStakedAmount();
-    }
-
-    function getTotalLockedRewards() public view override returns (uint256) {
-        // if state is [PreOpened, Opened]
-        ConfigState state = getConfigState();
-        if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
-            return getRewardTokenBalance();
-        } else {
-            // case phase >= 0 (in [2,3])
-            // use formula
-            return estimateConfigTotalRewards();
+    /**
+     * returns the total locked reward tokens given the configuration of stake used.
+     * The locked amount vary depending on which state the config currently is.
+     *
+     * If the state is Locked or Completed, the locked reward tokens will be the estimated
+     * reward for the currently total staked tokens.
+     *
+     * If the config is in any other state, then the whole balance is locked.
+     */
+    function getTotalLockedRewards() public view returns (uint256) {
+        ConfigState state = getState();
+        if (state == ConfigState.Locked || state == ConfigState.Completed) {
+            return estimateRewards(_totalStaked);
         }
+        return getRewardTokenBalance();
     }
 
-    function getConfigState() public view override returns (ConfigState) {
-        if (isNotSet()) return ConfigState.NotSet;
-        else if (isPreOpened()) return ConfigState.PreOpened;
-        else if (isOpened()) return ConfigState.Opened;
-        else if (isLocked()) return ConfigState.Locked;
+    /**
+     * gets the staking state based on the block timestamp and the
+     * given configuration.
+     */
+    function getState() public view returns (ConfigState) {
+        uint256 ts_ = block.timestamp;
+        uint256 startLock = C.startDate + C.depositDays;
+        if (C.startDate == 0) return ConfigState.NotSet;
+        if (C.startDate <= ts_ && ts_ < startLock) return ConfigState.Opened;
+        else if (startLock <= ts_ && ts_ < startLock + C.lockDays)
+            return ConfigState.Locked;
         else return ConfigState.Completed;
     }
 
-
-    function isNotSet() public view override returns (bool) {
-        return config_.startDate == 0;
-    }
-
-    function isPreOpened() public view override returns (bool) {
-        return block.timestamp < config_.startDate;
-    }
-
-    function isOpened() public view override returns (bool) {
-        uint256 ts_ = block.timestamp;
-        return
-            config_.startDate <= ts_ &&
-            ts_ < config_.startDate + config_.depositPeriodDuration;
-    }
-
-    function isLocked() public view override returns (bool) {
-        uint256 ts_ = block.timestamp;
-        return
-            config_.startDate + config_.depositPeriodDuration <= ts_ &&
-            ts_ <
-            config_.startDate +
-                config_.depositPeriodDuration +
-                config_.lockPeriodDuration;
-    }
-
-    function isCompleted() public view override returns (bool) {
-        return
-            config_.startDate +
-                config_.depositPeriodDuration +
-                config_.lockPeriodDuration <=
-            block.timestamp;
-    }
-
-    function estimateConfigRewards(
-        uint256 stakedAmount
-    ) public view override returns (uint256 expectedReward) {
-        if (isPreOpened() || isNotSet()) return 0;
-
-
-        uint256 rewardsToBe_ = config_.rewardRateOver10k * stakedAmount;
-
-        if (rewardsToBe_ % REWARD_FACTOR != 0) {
-            rewardsToBe_ -= rewardsToBe_ % REWARD_FACTOR;
-        }
-
-        if (rewardsToBe_ == 0) {
-            return 0;
-        }
-        return rewardsToBe_ / REWARD_FACTOR;
-    }
-
-    function estimateConfigTotalRewards() public view override returns (uint256) {
-        return estimateConfigRewards(_totalStaked);
-    }
-
+    /**
+     * estimate the rewards for the specified user
+     * @param user the user to estimate rewards for
+     */
     function estimateConfigUserRewards(
         address user
-    ) external view override returns (uint256) {
-        return estimateConfigRewards(_stakedPerUser[user]);
+    ) external view returns (uint256) {
+        return estimateRewards(_stakedPerUser[user]);
     }
 
-    function getRewardTokenBalance() public view returns (uint256){
+    /**
+     * get the total reward token balance in the contract
+     */
+    function getRewardTokenBalance() public view returns (uint256) {
         return _rewardToken.balanceOf(address(this));
     }
 
-    function getMaxStakeToken() public view override returns (uint256 maxStake) {
-        if (isNotSet()) return maxStake;
-        maxStake = getRewardTokenBalance() * REWARD_FACTOR;
-        // remember to transform lockPeriodDuration from seconds to days.
-        uint256 residual = maxStake % config_.rewardRateOver10k;
-        if (residual != 0) {
-            maxStake -= residual;
-            if (maxStake == 0) return maxStake;
+    /**
+     * estimates the reward tokens that will be obtained for
+     * the given input stake amount
+     *
+     * actual formula:
+     *      rewardsToBe = rewardRate * amount / RE_FACTOR
+     *
+     * @param stakeAmount the staked amount to use in the estimation
+     *
+     */
+    function estimateRewards(
+        uint256 stakeAmount
+    ) public view returns (uint256 expectedReward) {
+        uint256 mul1 = C.rewardRate * stakeAmount;
+        if (mul1 - (mul1 % REWARD_FACTOR) > 0) {
+            return (mul1 - (mul1 % REWARD_FACTOR)) / REWARD_FACTOR;
+        } else {
+            return 0;
         }
-        maxStake =
-            maxStake / config_.rewardRateOver10k;
-        return maxStake;
+    }
+
+    /**
+     * estimates the stake tokens required to obtain the input
+     * reward amount
+     *
+     * actual formula:
+     *      maxStake = rewardBalance * RE_FACTOR / rewardRate
+     *
+     * @param rewardAmount the reward amount to use in the estimation
+     */
+    function estimateStake(
+        uint256 rewardAmount
+    ) public view returns (uint256 maxStake) {
+        uint256 mul1 = rewardAmount * REWARD_FACTOR;
+        if (mul1 - (mul1 % C.rewardRate) > 0) {
+            return (mul1 - (mul1 % C.rewardRate)) / REWARD_FACTOR;
+        } else {
+            return 0;
+        }
     }
 }
