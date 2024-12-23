@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "../../interface/staking/LockedStakingInterface.sol";
+import "../../interface/staking/SimpleLockedStakingInterface.sol";
 import "../../types/StakingConfig.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./utils/ArrayBytes32.sol";
 
-contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard {
+contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, ReentrancyGuard {
     /**
      * @dev for detailed documentation on each function,
      * go to interface LockedStakingInterface
@@ -357,7 +357,7 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
     function getConfigState(
         bytes32 key
     ) public view override returns (ConfigState) {
-        else if (isNotSet(key)) return ConfigState.NotSet;
+        if (isNotSet(key)) return ConfigState.NotSet;
         else if (!configKeys.exists(key)) return ConfigState.Dropped;
         else if (isPreOpened(key)) return ConfigState.PreOpened;
         else if (isOpened(key)) return ConfigState.Opened;
@@ -406,7 +406,7 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
         bytes32 key,
         uint256 stakedAmount
     ) public view override returns (uint256 expectedReward) {
-        if (isDropped(key) || isPreOpened(key) || isNotSet(key)) return 0;
+        if (isPreOpened(key) || isNotSet(key)) return 0;
         StakingConfig memory config_ = getStakingConfig(key);
         uint256 lockDays_ = config_.lockPeriodDuration / 86400;
 
@@ -454,7 +454,7 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
     function getMaxStakeToken(
         bytes32 key
     ) public view override returns (uint256 maxStake) {
-        if (isNotSet(key) || isDropped(key)) return maxStake;
+        if (isNotSet(key)) return maxStake;
         StakingConfig memory config = getStakingConfig(key);
         maxStake = config.tokensForRewards * 10000000;
         // remember to transform lockPeriodDuration from seconds to days.
