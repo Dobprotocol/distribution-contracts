@@ -427,8 +427,4 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             ((config.dprOver10kk * config.lockPeriodDuration) / 86400);
         return maxStake;
     }
-
-    function getNumberOfActiveConfigs() public view override returns (uint256) {
-        return configKeys.length;
-    }
 }

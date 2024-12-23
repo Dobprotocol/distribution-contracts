@@ -287,10 +287,4 @@ interface SimpleLockedStakingInterface {
         bytes32 key
     ) external view returns (uint256 maxStake);
 
-    /**
-     * get the total number of active configurations.
-     *
-     * in the contract, this us just `configKeys.length`.
-     */
-    function getNumberOfActiveConfigs() external view returns (uint256);
 }
