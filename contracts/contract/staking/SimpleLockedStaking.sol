@@ -79,7 +79,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 _amount
     ) external override nonReentrant {
         require(
-            getConfigState(0) == ConfigState.Opened,
+            getConfigState() == ConfigState.Opened,
             "config must be in state Opened"
         );
         uint256 maxStake = getMaxStakeToken(0);
@@ -98,7 +98,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     function claim(bytes32 _configId) external override nonReentrant {
         require(
-            getConfigState(0) == ConfigState.Completed,
+            getConfigState() == ConfigState.Completed,
             "config must be in state Completed"
         );
         uint256 stakedAmount = _config._stakedPerUser[msg.sender];
@@ -189,7 +189,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         bytes32 key,
         uint256 tokensForRewards
     ) external override onlyOwner {
-        ConfigState state = getConfigState(0);
+        ConfigState state = getConfigState();
         require(
             state == ConfigState.PreOpened || state == ConfigState.Opened,
             "to update, config can only be PreOpened or Opened"
@@ -281,7 +281,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     function getTotalLockedRewards() public view override returns (uint256) {
         // if state is [PreOpened, Opened]
-        ConfigState state = getConfigState(0);
+        ConfigState state = getConfigState();
         if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
             // use tokensForRewards
             return _config.config.tokensForRewards;
@@ -292,26 +292,24 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         }
     }
 
-    function getConfigState(
-        bytes32 key
-    ) public view override returns (ConfigState) {
-        if (isNotSet(0)) return ConfigState.NotSet;
-        else if (isPreOpened(0)) return ConfigState.PreOpened;
-        else if (isOpened(0)) return ConfigState.Opened;
-        else if (isLocked(0)) return ConfigState.Locked;
+    function getConfigState() public view override returns (ConfigState) {
+        if (isNotSet()) return ConfigState.NotSet;
+        else if (isPreOpened()) return ConfigState.PreOpened;
+        else if (isOpened()) return ConfigState.Opened;
+        else if (isLocked()) return ConfigState.Locked;
         else return ConfigState.Completed;
     }
 
 
-    function isNotSet(bytes32 key) public view override returns (bool) {
+    function isNotSet() public view override returns (bool) {
         return _config.config.startDate == 0;
     }
 
-    function isPreOpened(bytes32 key) public view override returns (bool) {
+    function isPreOpened() public view override returns (bool) {
         return block.timestamp < _config.config.startDate;
     }
 
-    function isOpened(bytes32 key) public view override returns (bool) {
+    function isOpened() public view override returns (bool) {
         uint256 ts_ = block.timestamp;
         StakingConfig memory config = getStakingConfig(0);
         return
@@ -319,7 +317,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
             ts_ < config.startDate + config.depositPeriodDuration;
     }
 
-    function isLocked(bytes32 key) public view override returns (bool) {
+    function isLocked() public view override returns (bool) {
         uint256 ts_ = block.timestamp;
         StakingConfig memory config = getStakingConfig(0);
         return
@@ -330,7 +328,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
                 config.lockPeriodDuration;
     }
 
-    function isCompleted(bytes32 key) public view override returns (bool) {
+    function isCompleted() public view override returns (bool) {
         StakingConfig memory config = getStakingConfig(0);
         return
             config.startDate +
@@ -343,7 +341,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         bytes32 key,
         uint256 stakedAmount
     ) public view override returns (uint256 expectedReward) {
-        if (isPreOpened(key) || isNotSet(key)) return 0;
+        if (isPreOpened() || isNotSet()) return 0;
         StakingConfig memory config_ = getStakingConfig(key);
         uint256 lockDays_ = config_.lockPeriodDuration / 86400;
 
@@ -387,7 +385,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     function getMaxStakeToken(
         bytes32 key
     ) public view override returns (uint256 maxStake) {
-        if (isNotSet(key)) return maxStake;
+        if (isNotSet()) return maxStake;
         StakingConfig memory config = getStakingConfig(key);
         maxStake = config.tokensForRewards * 10000000;
         // remember to transform lockPeriodDuration from seconds to days.

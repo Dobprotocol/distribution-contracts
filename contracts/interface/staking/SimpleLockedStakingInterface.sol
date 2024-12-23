@@ -173,15 +173,13 @@ interface SimpleLockedStakingInterface {
      *      - not working functions: stake()
      *      - working functions: claim()
      *
-     * @param key the config encoded-unique key
      */
-    function getConfigState(bytes32 key) external view returns (ConfigState);
+    function getConfigState() external view returns (ConfigState);
 
     /**
      * returns True if the config is notSet
-     * @param key the config encoded-unique key
      */
-    function isNotSet(bytes32 key) external view returns (bool);
+    function isNotSet() external view returns (bool);
 
     /**
      * returns True if the config is PreOpened.
@@ -189,9 +187,8 @@ interface SimpleLockedStakingInterface {
      * WARNING: this function does not take into consideration
      *          if the config is inactive, it only considers
      *          the stated based on timestamp and config values.
-     * @param key the config encoded-unique key
      */
-    function isPreOpened(bytes32 key) external view returns (bool);
+    function isPreOpened() external view returns (bool);
 
     /**
      * returns True if the config is Opened
@@ -199,9 +196,8 @@ interface SimpleLockedStakingInterface {
      * WARNING: this function does not take into consideration
      *          if the config is inactive, it only considers
      *          the stated based on timestamp and config values.
-     * @param key the config encoded-unique key
      */
-    function isOpened(bytes32 key) external view returns (bool);
+    function isOpened() external view returns (bool);
 
     /**
      * returns True if the config is Locked
@@ -209,9 +205,8 @@ interface SimpleLockedStakingInterface {
      * WARNING: this function does not take into consideration
      *          if the config is  inactive, it only considers
      *          the stated based on timestamp and config values.
-     * @param key the config encoded-unique key
      */
-    function isLocked(bytes32 key) external view returns (bool);
+    function isLocked() external view returns (bool);
 
     /**
      * returns True if the config is Completed
@@ -219,9 +214,8 @@ interface SimpleLockedStakingInterface {
      * WARNING: this function does not take into consideration
      *          if the config is  inactive, it only considers
      *          the stated based on timestamp and config values.
-     * @param key the config encoded-unique key
      */
-    function isCompleted(bytes32 key) external view returns (bool);
+    function isCompleted() external view returns (bool);
 
     /**
      * estimate the rewards that a configuration would give
