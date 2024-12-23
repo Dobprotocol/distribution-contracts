@@ -266,18 +266,6 @@ interface SimpleLockedStakingInterface {
         address user
     ) external view returns (uint256);
 
-    /**
-     * checks wether a config is active or not.
-     *
-     * An active config are the ones that were set and are still
-     * not deleted by the function flushOlcConfig().
-     *
-     * In the contract, if a config encoded-unique key is present in the
-     * array 'configKeys', then the config is active.
-     *
-     * @param key the config encoded-unique key
-     */
-    function configActive(bytes32 key) external view returns (bool);
 
     /**
      * return the total amount of locked tokens from the reward tokens.

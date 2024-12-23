@@ -418,10 +418,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         return estimateConfigRewards(key, configs[key]._stakedPerUser[user]);
     }
 
-    function configActive(bytes32 key) public view override returns (bool) {
-        return configKeys.exists(key);
-    }
-
     function getTotalLockedTokens() public view override returns (uint256) {
         uint256 currentLocked_ = getTotalLockedRewards();
         if (isSameTokenForRewardStake()) {
