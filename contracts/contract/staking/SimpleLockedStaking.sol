@@ -190,34 +190,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         );
     }
 
-    function updateStakingConfig(
-        uint256 tokensForRewards
-    ) external override onlyOwner {
-        ConfigState state = getConfigState();
-        require(
-            state == ConfigState.PreOpened || state == ConfigState.Opened,
-            "to update, config can only be PreOpened or Opened"
-        );
-        uint256 currentBalance_ = _rewardToken.balanceOf(address(this));
-        uint256 currentLocked_ = getTotalLockedTokens();
-        // substract the current tokensForRewards
-        currentLocked_ -= config_.tokensForRewards;
-        // add the new propossed tokensForRewads
-        currentLocked_ += tokensForRewards;
-        // check that we can lock that amount;
-        require(
-            currentLocked_ <= currentBalance_,
-            "cannot update tokensForRewards, not enough balance to lock"
-        );
-        // check that the new tokensForRewards can cover the currently staked rewards;
-        require(
-            tokensForRewards >= estimateConfigTotalRewards(),
-            "cannot update tokensForReward, new ballance would be lower than required based on staked amount."
-        );
-        // update
-        config_.tokensForRewards = tokensForRewards;
-        emit ConfigUpdate(tokensForRewards);
-    }
 
     //////////////////////////////////
     // getter functions

@@ -56,22 +56,6 @@ interface SimpleLockedStakingInterface {
     ) external;
 
 
-    /**
-     * update the amounts of tokens for rewards
-     * asigned to this specific config.
-     *
-     * conditions:
-     * - state must be [PreOpened, Opened]
-     * - check that there are enough tokens for the update
-     * - check that the new tokensForRewards is enough to
-     *      maintain the already staked tokens (if any)
-     *
-     * @param tokensForRewards the new amount of tokens for rewards
-     */
-    function updateStakingConfig(
-        uint256 tokensForRewards
-    ) external;
-
     //////////////////////////////////
     // getter functions
     //////////////////////////////////
