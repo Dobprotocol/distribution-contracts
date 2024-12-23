@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSL-1.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import "../../types/StakingConfig.sol";
+import "../../types/SimpleStakingConfig.sol";
 
 interface SimpleLockedStakingInterface {
     /**
