@@ -221,13 +221,6 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
         return key_;
     }
 
-    function dropStakingConfig(bytes32 key) external override onlyOwner {
-        require(configActive(key), "config not found");
-        require(!configs[key].dropped, "config already dropped");
-        configs[key].dropped = true;
-        emit ConfigDrop(key);
-    }
-
     function flushOldConfigs() external override onlyOwner {
         // find the indexes to remove
         uint256 l = configKeys.length;
@@ -364,7 +357,6 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
     function getConfigState(
         bytes32 key
     ) public view override returns (ConfigState) {
-        if (isDropped(key)) return ConfigState.Dropped;
         else if (isNotSet(key)) return ConfigState.NotSet;
         else if (!configKeys.exists(key)) return ConfigState.Dropped;
         else if (isPreOpened(key)) return ConfigState.PreOpened;
@@ -373,9 +365,6 @@ contract SimpleLockedStaking is Ownable, LockedStakingInterface, ReentrancyGuard
         else return ConfigState.Completed;
     }
 
-    function isDropped(bytes32 key) public view override returns (bool) {
-        return configs[key].dropped;
-    }
 
     function isNotSet(bytes32 key) public view override returns (bool) {
         return configs[key].config.startDate == 0;
