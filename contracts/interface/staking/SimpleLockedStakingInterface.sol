@@ -55,7 +55,7 @@ interface SimpleLockedStakingInterface {
      */
     function setStakingConfig(
         StakingConfig memory config
-    ) external returns (bytes32);
+    ) external;
 
 
     /**
@@ -68,11 +68,9 @@ interface SimpleLockedStakingInterface {
      * - check that the new tokensForRewards is enough to
      *      maintain the already staked tokens (if any)
      *
-     * @param key the key of the config to update
      * @param tokensForRewards the new amount of tokens for rewards
      */
     function updateStakingConfig(
-        bytes32 key,
         uint256 tokensForRewards
     ) external;
 
@@ -80,29 +78,17 @@ interface SimpleLockedStakingInterface {
     // getter functions
     //////////////////////////////////
 
-    /**
-     * @param key the key of the staking config to get
-     */
+
     function getStakingConfig(
-        bytes32 key
     ) external view returns (StakingConfig memory);
 
     /**
-     * @param config the config to get the encoded-unique key.
-     */
-    function getConfigKey(
-        StakingConfig memory config
-    ) external view returns (bytes32);
-
-    /**
      *
-     * @param key the key of the config to the get usage data
      * @return activeUsersCount the number of active users in the config
      * @return totalStaked the total amount of tokens staked in the config
      * @return totalClaimed the total amount of claimable tokens in the config.
      */
     function getConfigUsageData(
-        bytes32 key
     )
         external
         view
@@ -114,18 +100,15 @@ interface SimpleLockedStakingInterface {
 
     /**
      * returns the total amount of staked tokens in a config
-     * @param key config encoded-unique key
      */
-    function getConfigStakedAmount(bytes32 key) external view returns (uint256);
+    function getConfigStakedAmount() external view returns (uint256);
 
     /**
      * returns the total amount of staked tokens for an specific
      *  user in a config
-     * @param key the config encoded-unique key
      * @param user the address of the user.
      */
     function getConfigUserStakedAmount(
-        bytes32 key,
         address user
     ) external view returns (uint256);
 
@@ -222,11 +205,9 @@ interface SimpleLockedStakingInterface {
      * if we deposit a certain amount of stake tokens.
      *
      *
-     * @param key the config encoded-unique key
      * @param stakedAmount the staked amount to use in the estimation.
      */
     function estimateConfigRewards(
-        bytes32 key,
         uint256 stakedAmount
     ) external view returns (uint256 expectedReward);
 
@@ -234,22 +215,17 @@ interface SimpleLockedStakingInterface {
      * estimate the total amount of rewards tokens a config would
      * give based on the currently amount of staked tokens in the config.
      *
-     * @param key the config encoded-unique key
      */
-    function estimateConfigTotalRewards(
-        bytes32 key
-    ) external view returns (uint256);
+    function estimateConfigTotalRewards() external view returns (uint256);
 
     /**
      * estimates the amount of reward tokens a config would
      * give to a specific user, based on the amount of tokens
      * that user has staked in the config.
      *
-     * @param key the config encoded-unique key
      * @param user user address
      */
     function estimateConfigUserRewards(
-        bytes32 key,
         address user
     ) external view returns (uint256);
 
@@ -275,10 +251,8 @@ interface SimpleLockedStakingInterface {
      * where the implementation makes sure to handle the respective truncations
      * so the numbers are divisibles.
      *
-     * @param key the config encoded-unique key
      */
     function getMaxStakeToken(
-        bytes32 key
     ) external view returns (uint256 maxStake);
 
 }
