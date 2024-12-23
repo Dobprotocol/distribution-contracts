@@ -39,13 +39,14 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     // config
     StakingConfig private config_;
+    uint256 private constant REWARD_FACTOR = 10000;
 
     //////////////////////////////////
     // events
     //////////////////////////////////
     event ConfigUpdate(uint256 newTokensForReward);
     event ConfigSet(
-        uint256 dprOpver10kk,
+        uint256 rewardRateOver10k,
         uint256 tokensForRewards,
         uint256 lockPeriodDuration,
         uint256 depositPeriodDuration,
@@ -181,7 +182,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         // if everything checks, create the config
         config_ = config;
         emit ConfigSet(
-            config.dprOver10kk,
+            config.rewardRateOver10k,
             config.tokensForRewards,
             config.lockPeriodDuration,
             config.depositPeriodDuration,
@@ -322,19 +323,18 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         uint256 stakedAmount
     ) public view override returns (uint256 expectedReward) {
         if (isPreOpened() || isNotSet()) return 0;
-        StakingConfig memory config_ = getStakingConfig();
-        uint256 lockDays_ = config_.lockPeriodDuration / 86400;
 
-        uint256 rewardsToBe_ = config_.dprOver10kk * lockDays_ * stakedAmount;
 
-        if (rewardsToBe_ % 100000 != 0) {
-            rewardsToBe_ -= rewardsToBe_ % 100000;
+        uint256 rewardsToBe_ = config_.rewardRateOver10k * stakedAmount;
+
+        if (rewardsToBe_ % REWARD_FACTOR != 0) {
+            rewardsToBe_ -= rewardsToBe_ % REWARD_FACTOR;
         }
 
         if (rewardsToBe_ == 0) {
             return 0;
         }
-        return rewardsToBe_ / 100000;
+        return rewardsToBe_ / REWARD_FACTOR;
     }
 
     function estimateConfigTotalRewards() public view override returns (uint256) {
@@ -361,18 +361,15 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     function getMaxStakeToken() public view override returns (uint256 maxStake) {
         if (isNotSet()) return maxStake;
-        StakingConfig memory config = getStakingConfig();
-        maxStake = config.tokensForRewards * 10000000;
+        maxStake = config_.tokensForRewards * REWARD_FACTOR;
         // remember to transform lockPeriodDuration from seconds to days.
-        uint256 residual = maxStake %
-            ((config.dprOver10kk * config.lockPeriodDuration) / 86400);
+        uint256 residual = maxStake % config_.rewardRateOver10k;
         if (residual != 0) {
             maxStake -= residual;
             if (maxStake == 0) return maxStake;
         }
         maxStake =
-            maxStake /
-            ((config.dprOver10kk * config.lockPeriodDuration) / 86400);
+            maxStake / config_.rewardRateOver10k;
         return maxStake;
     }
 }

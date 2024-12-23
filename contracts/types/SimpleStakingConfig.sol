@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 struct StakingConfig{
-    uint256 dprOver10kk;
+    uint256 rewardRateOver10k;
     uint256 tokensForRewards;
     uint256 lockPeriodDuration;
     uint256 depositPeriodDuration;
