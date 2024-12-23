@@ -46,7 +46,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
     //////////////////////////////////
     event ConfigSet(
         uint256 rewardRateOver10k,
-        uint256 tokensForRewards,
         uint256 lockPeriodDuration,
         uint256 depositPeriodDuration,
         uint256 startDate
@@ -171,7 +170,6 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         config_ = config;
         emit ConfigSet(
             config.rewardRateOver10k,
-            config.tokensForRewards,
             config.lockPeriodDuration,
             config.depositPeriodDuration,
             config.startDate
@@ -221,8 +219,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
         // if state is [PreOpened, Opened]
         ConfigState state = getConfigState();
         if (state == ConfigState.PreOpened || state == ConfigState.Opened) {
-            // use tokensForRewards
-            return config_.tokensForRewards;
+            return _rewardToken.balanceOf(address(this));
         } else {
             // case phase >= 0 (in [2,3])
             // use formula
@@ -307,7 +304,7 @@ contract SimpleLockedStaking is Ownable, SimpleLockedStakingInterface, Reentranc
 
     function getMaxStakeToken() public view override returns (uint256 maxStake) {
         if (isNotSet()) return maxStake;
-        maxStake = config_.tokensForRewards * REWARD_FACTOR;
+        maxStake = _rewardToken.balanceOf(address(this)) * REWARD_FACTOR;
         // remember to transform lockPeriodDuration from seconds to days.
         uint256 residual = maxStake % config_.rewardRateOver10k;
         if (residual != 0) {
