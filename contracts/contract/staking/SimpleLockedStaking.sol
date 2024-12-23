@@ -30,6 +30,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
      * - Completed: Staking period is completed (users can claim their rewards).
      */
     enum ConfigState {
+        PreOpened,
         Opened,
         Locked,
         Completed,
@@ -37,8 +38,8 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
     }
 
     // State variables
-    ERC20 private immutable _stakeToken; // ERC20 token used for staking
-    ERC20 private immutable _rewardToken; // ERC20 token used for rewards
+    ERC20 public immutable stakeToken; // ERC20 token used for staking
+    ERC20 public immutable rewardToken; // ERC20 token used for rewards
     uint256 private _activeUsersCounter; // Number of active users with staked tokens
     uint256 private _totalStaked; // Total staked tokens
     uint256 private _claimedRewards; // Total claimed rewards
@@ -139,8 +140,8 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
             address(stakingToken) != address(rewardsToken),
             "stake and reward tokens must be different"
         );
-        _stakeToken = stakingToken;
-        _rewardToken = rewardsToken;
+        stakeToken = stakingToken;
+        rewardToken = rewardsToken;
     }
 
     //////////////////////////////////
@@ -158,7 +159,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
             _totalStaked + _amount <= maxStake,
             "cannot stake more than the allowed amount"
         );
-        _stakeToken.safeTransferFrom(msg.sender, address(this), _amount);
+        stakeToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         // update variables
         if (_stakedPerUser[msg.sender] == 0) {
@@ -178,13 +179,13 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
         require(stakedAmount > 0, "User does not have staked tokens");
         uint256 expectedReward = estimateRewards(stakedAmount);
         require(
-            getRewardTokenBalance() > expectedReward,
+            getRewardTokenBalance() >= expectedReward,
             "Not enough reward tokens"
         );
 
         // transfer the tokens
-        _stakeToken.safeTransfer(msg.sender, stakedAmount);
-        _rewardToken.safeTransfer(msg.sender, expectedReward);
+        stakeToken.safeTransfer(msg.sender, stakedAmount);
+        rewardToken.safeTransfer(msg.sender, expectedReward);
 
         // make the variables updates
         _stakedPerUser[msg.sender] = 0;
@@ -202,7 +203,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
         require(getRewardTokenBalance() > getTotalLockedRewards(), "no tokens available to withdraw");
         uint256 withdrawTokens = getRewardTokenBalance() -
             getTotalLockedRewards();
-        _rewardToken.safeTransfer(msg.sender, withdrawTokens);
+        rewardToken.safeTransfer(msg.sender, withdrawTokens);
         emit WithdrawRemains(withdrawTokens);
     }
 
@@ -311,10 +312,12 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
         if (C.startDate == 0) return ConfigState.NotSet;
 
         uint256 ts_ = block.timestamp;
-        uint256 startLock = C.startDate + C.depositDays;
+        uint256 startLock = C.startDate + C.depositDays * DAY_TO_SECONDS;
+        uint256 startComplete = startLock + C.lockDays * DAY_TO_SECONDS;
 
+        if (ts_ < C.startDate) return ConfigState.PreOpened;
         if (C.startDate <= ts_ && ts_ < startLock) return ConfigState.Opened;
-        if (startLock <= ts_ && ts_ < startLock + C.lockDays)
+        if (startLock <= ts_ && ts_ < startComplete)
             return ConfigState.Locked;
 
         return ConfigState.Completed;
@@ -334,7 +337,7 @@ contract SimpleLockedStaking is Ownable, ReentrancyGuard {
      * get the total reward token balance in the contract
      */
     function getRewardTokenBalance() public view returns (uint256) {
-        return _rewardToken.balanceOf(address(this));
+        return rewardToken.balanceOf(address(this));
     }
 
     /**
