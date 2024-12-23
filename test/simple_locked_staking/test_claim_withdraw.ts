@@ -123,6 +123,12 @@ describe("Claim and withdraw Tokens", function () {
         expect(
             res.totalStaked.toString()
         ).to.equal(ethers.utils.parseUnits("200.034").toString())
+        expect(
+            res.maxStake.toString()
+        ).to.equal(ethers.utils.parseUnits("1000").toString())
+        expect(
+            res.totalWithdrawRemains.toString()
+        ).to.equal("0")
 
         // also after the claim the user balance should change
         expect(
@@ -163,6 +169,12 @@ describe("Claim and withdraw Tokens", function () {
         ).to.equal(ethers.utils.parseUnits("14.9966").toString())
         expect(
             res.totalStaked.toString()
+        ).to.equal("0")
+        expect(
+            res.maxStake.toString()
+        ).to.equal(ethers.utils.parseUnits("1000").toString())
+        expect(
+            res.totalWithdrawRemains.toString()
         ).to.equal("0")
 
         // check balance of both users and smart contract
@@ -213,6 +225,13 @@ describe("Claim and withdraw Tokens", function () {
         expect(
             res.totalStaked.toString()
         ).to.equal("0")
+        expect(
+            res.maxStake.toString()
+        ).to.equal(ethers.utils.parseUnits("1000").toString())
+        expect(
+            res.totalWithdrawRemains.toString()
+        ).to.equal(ethers.utils.parseUnits("14.9966").toString())
+        
 
         // check balance of both users and smart contract
         expect(

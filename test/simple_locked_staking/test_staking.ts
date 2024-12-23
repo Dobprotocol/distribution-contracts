@@ -64,6 +64,7 @@ describe("Staking Tokens", function () {
         expect(Number(res.totalClaimed)).to.equal(0)
         expect(res.rewardBalance.toString()).to.equal(ethers.utils.parseUnits("100").toString())
         expect(res.totalStaked.toString()).to.equal(ethers.utils.parseUnits("100").toString())
+        expect(res.maxStake.toString()).to.equal(ethers.utils.parseUnits("1000").toString())
     
     });
 
@@ -172,6 +173,9 @@ describe("Staking Tokens", function () {
         expect(
             res.totalStaked.toString()
         ).to.equal(ethers.utils.parseUnits("850.034").toString())
+        expect(
+            res.maxStake.toString()
+        ).to.equal(ethers.utils.parseUnits("1000").toString())
 
         // before locked state, the locked rewards should be all
         expect(
@@ -187,6 +191,29 @@ describe("Staking Tokens", function () {
         expect(
             (await simpleStaking.getTotalLockedRewards()).toString()
         ).to.equal(ethers.utils.parseUnits("85.0034").toString())
+
+    })
+
+    it("should prevent staking if max staking is 0 since no reward token was deposted", async function (){
+        const SimpleLockedStaking = await ethers.getContractFactory("SimpleLockedStaking");
+        let stakeContract = await SimpleLockedStaking.connect(owner).deploy(stakingToken.address, rewardToken.address);
+        let block = await ethers.provider.getBlock("latest");
+        await stakeContract.connect(owner).setConfig({
+            rewardRate: 1000, // 0.1
+            lockDays: 7,
+            depositDays: 1,
+            startDate: block.timestamp + oneDay
+        })
+
+        //move to state Opened
+        await network.provider.send("evm_increaseTime", [oneDay + 30]);
+        await network.provider.send("evm_mine");
+        expect(await simpleStaking.getState()).to.equal(1)
+
+        // try yo stake when no rewards are set should revert
+        await expect(
+            stakeContract.connect(addr1).stake(ethers.utils.parseUnits("1"))
+        ).to.be.rejectedWith("cannot stake more than the allowed amount")
 
     })
 });
