@@ -29,7 +29,7 @@ import "./tasks/staking/transferOwnershipStaking"
 import "./tasks/simpleStaking/deployStaking"
 import "./tasks/simpleStaking/depositRewardStaking"
 import "./tasks/simpleStaking/configureStaking"
-
+import "./tasks/simpleStaking/transferOwnershipStaking"
 
 // erc20 tasks
 import "./tasks/erc20/deployToken"
