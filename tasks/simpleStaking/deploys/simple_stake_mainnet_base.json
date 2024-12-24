@@ -1,0 +1,19 @@
+{
+  "contract": {
+    "address": "0xFe6f53967579EF624953ba9f47EEE20EC3a1639a",
+    "tokens": {
+      "stake": "0x931eF8053E997b1Bab68d1E900a061305c0Ff4FB",
+      "reward": "0xF20cE503BCd9721ea43Ddd0485C66fa675BD3FC5"
+    },
+    "owner": "0x326C2610E0a97cB5e24a42059e2A2A0E41738b78",
+    "name": "SimpleLockedStaking"
+  },
+  "configurations": [
+    {
+      "rewardRate": 100,
+      "lockDays": 180,
+      "depositDays": 72,
+      "startDate": 1735041600
+    }
+  ]
+}
