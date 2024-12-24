@@ -45,12 +45,18 @@ task("configureSimpleStaking", "task to configure a new  locked staking setting.
             throw new Error("StartDate cannot be before today");
         }
 
+        let humanStartLockDate = new Date(0)
+        humanStartLockDate.setUTCSeconds(startDate + depositPeriod * 86400)
+
+        let humanStartCompleteDate = new Date(0)
+        humanStartCompleteDate.setUTCSeconds(startDate + depositPeriod * 86400 + lockPeriod * 86400)
+
 
 
         console.log("::: THE FOLLOWING STAKING CONFIGURATION WILL BE CREATED:::")
         console.log("-> staking contract:", data["contract"]["address"])
-        console.log("-> Lock period (days):", lockPeriod, )
-        console.log("-> deposit period (days):", depositPeriod,)
+        console.log("-> Lock period (days):", lockPeriod, "| lock period ends at:", humanStartCompleteDate)
+        console.log("-> deposit period (days):", depositPeriod, "| deposit period ends at:", humanStartLockDate)
         console.log("-> start Date (epoch):", startDate, "| human:", humanStartDate)
         console.log("-> reward rate (factor):", rewardRate/10000)
         console.log("==-> total rewards percent over the lock period:", rewardRate/100)
@@ -67,10 +73,11 @@ task("configureSimpleStaking", "task to configure a new  locked staking setting.
 
         const config = {
             "rewardRate": rewardRate,
-            "lockPeriodDuration": lockPeriod,
-            "depositPeriodDuration": depositPeriod,
+            "lockDays": lockPeriod,
+            "depositDays": depositPeriod,
             "startDate": startDate
         }
+        console.log("config is:", config)
 
         let tx = await staking.connect(signer)
             .functions.setConfig(config)
