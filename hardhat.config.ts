@@ -1,9 +1,9 @@
 import { HardhatUserConfig } from "hardhat/config";
-// import "@nomicfoundation/hardhat-toolbox";
-// import '@openzeppelin/hardhat-upgrades';
+import "@nomicfoundation/hardhat-toolbox";
+import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-verify";
+// import "@nomicfoundation/hardhat-verify";
 
 
 import "./tasks/deploydobBase"
@@ -33,6 +33,9 @@ import "./tasks/simpleStaking/transferOwnershipStaking"
 
 // erc20 tasks
 import "./tasks/erc20/deployToken"
+
+// DobSale tasks
+import "./tasks/dob_sale/deployDobSale"
 
 
 require('hardhat-contract-sizer');
@@ -108,7 +111,7 @@ module.exports = {
     basesepolia: {
       url: process.env.BASE_SEPOLIA_URL || "",
       accounts:
-      process.env.ACCOUNT_BASE?.split(",")
+      process.env.ACCOUNT_BASE_SEPOLIA?.split(",")
     }
   },
   etherscan: {
