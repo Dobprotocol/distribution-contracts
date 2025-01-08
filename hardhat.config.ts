@@ -1,9 +1,16 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
+
+// TODO: the modules hardhat-toolbox and hardhat-upgrades have collision with hardhat-verify
+// so depending on the use case you plan you must enable one or another
+// 
+// if you want to run tests and develop code, then use hardhat-toolbox and upgrades
+import "@nomicfoundation/hardhat-toolbox";
+import '@openzeppelin/hardhat-upgrades';
+// if you want to verify a deploy, then disable the other 2 modules and use hardhat-verify
 // import "@nomicfoundation/hardhat-verify";
+//
 
 
 import "./tasks/deploydobBase"
