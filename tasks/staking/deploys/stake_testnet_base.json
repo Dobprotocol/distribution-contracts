@@ -14,6 +14,13 @@
       "lockPeriodDuration": 17280000,
       "depositPeriodDuration": 5184000,
       "startDate": 1734912000
+    },
+    {
+      "dprOver10kk": 100000,
+      "tokensForRewards": "1000000000000000000",
+      "lockPeriodDuration": 604800,
+      "depositPeriodDuration": 86400,
+      "startDate": 1734726008
     }
   ]
 }
