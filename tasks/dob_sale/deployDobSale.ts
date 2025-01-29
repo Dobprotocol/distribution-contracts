@@ -37,14 +37,13 @@ task("deployDobSale", "task to deploy the smart contract DobSale.")
         let data = {
             "contract": {
                 "address": dobSale.address,
-                "tokens": {
-                    "stake": taskArgs.stakeToken,
-                    "reward": taskArgs.rewardToken
-                },
                 "owner": signer.address,
                 "name": "DobSale"
             },
-            "configurations": []
+            "config": {
+                "saleToken": taskArgs.saleToken,
+                "price": price
+            }
         }
         console.log("writing data", data)
         fs.writeFileSync(outputConfigFile, JSON.stringify(data, null, 2))
