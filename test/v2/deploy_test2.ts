@@ -75,6 +75,7 @@ describe("proving deploys with pool master", function () {
                 [40, 30, 30], // shares,
                 [0, 999, 18000],
                 '{"name": "testParticipationPool"}', // poolData,
+                ethers.constants.AddressZero, // with address 0, we say that a new participation token must be created
                 {value: ethers.utils.parseUnits("0.1", "ether").toString()}
             )
         let txRes = await txData.wait()
