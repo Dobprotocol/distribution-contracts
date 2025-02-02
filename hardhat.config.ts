@@ -1,8 +1,9 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import '@openzeppelin/hardhat-upgrades';
+// import "@nomicfoundation/hardhat-toolbox";
+// import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-verify";
 
 
 import "./tasks/deploydobBase"
@@ -13,11 +14,15 @@ import "./tasks/deploydobToken"
 import "./tasks/upgradeTokenSaleMarket"
 import "./tasks/deployPools"
 import "./tasks/estimateGasDeployDobBase"
+import "./tasks/getInfo"
+import "./tasks/tsmSetSale"
+import "./tasks/deployParticipationToken"
+import "./tasks/tsmBuyToken"
 
 
 require('hardhat-contract-sizer');
 require('dotenv').config()
-require("@nomiclabs/hardhat-etherscan");
+// require("@nomiclabs/hardhat-etherscan");
 
 const config: HardhatUserConfig = {
   solidity: "0.8.17",
@@ -87,6 +92,11 @@ module.exports = {
     }
   },
   etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY
+    apiKey: {
+      base: process.env.BASE_API_KEY
+    }
   },
+  sourcify: {
+    enabled: true
+  }
 };
