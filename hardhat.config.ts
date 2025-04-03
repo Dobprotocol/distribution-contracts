@@ -6,18 +6,24 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomicfoundation/hardhat-verify";
 
 
-import "./tasks/deploydobBase"
-import "./tasks/deployNewLogic"
-import "./tasks/upgradePool"
-import "./tasks/upgradePoolMaster"
-import "./tasks/deploydobToken"
-import "./tasks/upgradeTokenSaleMarket"
-import "./tasks/deployPools"
-import "./tasks/estimateGasDeployDobBase"
-import "./tasks/getInfo"
-import "./tasks/tsmSetSale"
-import "./tasks/deployParticipationToken"
-import "./tasks/tsmBuyToken"
+// import dob_base tasks
+import "./tasks/tasks_dob_base/deploy/deployDobBase"
+import "./tasks/tasks_dob_base/deploy/deployNewLogic"
+import "./tasks/tasks_dob_base/deploy/deployPools"
+import "./tasks/tasks_dob_base/deploy/deployTreasuryDistributionPool"
+import "./tasks/tasks_dob_base/estimate/estimateGasDeployDobBase"
+import "./tasks/tasks_dob_base/get/getPoolInfo"
+import "./tasks/tasks_dob_base/upgrade/upgradePool"
+import "./tasks/tasks_dob_base/upgrade/upgradePoolMaster"
+import "./tasks/tasks_dob_base/upgrade/upgradeTokenSaleMarket"
+
+// import tsm_tasks
+import "./tasks/tasks_tsm/tsmBuyToken"
+import "./tasks/tasks_tsm/tsmSetSale"
+
+// import erc20 tasks
+import "./tasks/tasks_erc20/deployERC20"
+import "./tasks/tasks_erc20/transferToken"
 
 
 require('hardhat-contract-sizer');
