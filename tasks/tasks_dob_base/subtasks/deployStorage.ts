@@ -1,8 +1,8 @@
 import { subtask } from "hardhat/config";
 import fs from 'fs';
-import { deployerContract } from "./utils/contract-utils";
+import { deployerContract } from "../../utils/contract-utils";
 import * as path from 'path';
-import { checkCreatorAddress } from "./utils/deploy-utils";
+import { checkCreatorAddress } from "../../utils/deploy-utils";
 
 subtask("deployStorage", "Deploy a new storage")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
@@ -23,6 +23,7 @@ subtask("deployStorage", "Deploy a new storage")
 
         console.log("-->storage:", storage.address)
         var data = {
+            "network": hre.network.name,
             "storage": {
                 "address": storage.address,
                 "contract": inData["contracts"]["storage"],

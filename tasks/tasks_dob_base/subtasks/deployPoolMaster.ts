@@ -1,8 +1,8 @@
 import { subtask } from "hardhat/config";
 import fs from 'fs';
-import { deployerContract, contractAt } from "./utils/contract-utils";
+import { deployerContract, contractAt } from "../../utils/contract-utils";
 import * as path from 'path';
-import { checkCreatorAddress } from "./utils/deploy-utils";
+import { checkCreatorAddress } from "../../utils/deploy-utils";
 
 subtask("deployPoolMaster", "Deploy a new poolMaster")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")

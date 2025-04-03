@@ -1,8 +1,8 @@
 import { subtask } from "hardhat/config";
 import fs from 'fs';
-import { contractAt, deployerContract } from "./utils/contract-utils";
+import { contractAt, deployerContract } from "../../utils/contract-utils";
 import * as path from 'path';
-import { getSigner } from "./utils/simulation-utils";
+import { getSigner } from "../../utils/simulation-utils";
 
 subtask("upgradeContract", "Upgrade a contract using a new deployed logic address")
     // .addPositionalParam("contractFromName", "the name of the contract to be upgraded")

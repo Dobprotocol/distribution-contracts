@@ -1,13 +1,9 @@
 import { task } from "hardhat/config";
 import fs from 'fs';
 import * as path from 'path';
-import { contractAt, deployerContract } from "./subtasks/utils/contract-utils";
-import { findEvent } from "./subtasks/utils/transaction";
-import { getSigner } from "./subtasks/utils/simulation-utils";
-
-// function a(){
-
-// }
+import { contractAt } from "../../utils/contract-utils";
+import { findEvent } from "../../utils/transaction";
+import { getSigner } from "../../utils/simulation-utils";
 
 interface OutPool {
     users?: string[],
@@ -26,22 +22,40 @@ interface OutPool {
 
 
 task("deployPools", "A task to deploy a set of pools")
-    .addPositionalParam("inputConfigFile", "Name of the input config to use")
-    .addPositionalParam("outputConfigFile", "name of the file where the deploy data will be stored")
+    .addPositionalParam("configFile", "Path to the config file used for the deploy")
+    .addOptionalParam("outputFile", "Path to the output config file. By default uses tasks/outputs/deployPools/output_<datetime>.json", "")
+    .addOptionalParam("deployerAddress", "The address that will deploy the pools. Must match the private key from .env file", "0x0")
     .setAction(async (taskArgs, hre) => {
+        // check files exsits
+        if (!fs.existsSync(taskArgs.configFile)){
+            throw new Error("config file does not exist")
+        }
 
-        // get main variables
-        // account
+        // check deployer address
         const accounts = await hre.ethers.getSigners();
-        const outputConfigFile = path.join(
-            __dirname, "deploys", 
-            taskArgs.outputConfigFile);
+        const deployer = getSigner(taskArgs.deployerAddress, accounts);
 
-        const inputConfigFile = path.join(
-                __dirname, "configs", 
-                taskArgs.inputConfigFile);
+        // check output file
+        const defaultOutputFolder = path.join(path.dirname(path.dirname(__dirname)), "outputs", "deployPools")
+        console.log("defaultOutputFolder ->", defaultOutputFolder)
+
+        const now = new Date();
+        let outputFile;
+        if (taskArgs.outputFile === ""){
+            outputFile=path.join(defaultOutputFolder, `output_${now.toISOString()}.json`);
+        } else {
+            outputFile = taskArgs.outputFile;
+        }
+
+        // check if output folder exists, if not, create
+        if (!fs.existsSync(path.dirname(outputFile))){
+            fs.mkdirSync(path.dirname(outputFile), {recursive: true});
+        }
+
+
+        // process input config data
         const inData = JSON.parse(fs.readFileSync(
-            path.join(inputConfigFile), 'utf8'));
+            path.join(taskArgs.configFile), 'utf8'));
 
         const poolMaster = await contractAt(
             hre, inData["poolMaster"]["deployer"]["contract"], 
@@ -51,9 +65,8 @@ task("deployPools", "A task to deploy a set of pools")
             hre, inData["poolMaster"]["config"]["contract"], 
             inData["poolMaster"]["config"]["address"]);
         
-        const deployer = accounts[0];
-        console.log("deployer address is:", deployer.address)
 
+        // deploy specified pools
         let firstDate = Math.floor(Date.now()/1000);
         let outPools: OutPool[] = []
         for (let i = 0; i < inData["pools"].length; i++){
@@ -111,6 +124,7 @@ task("deployPools", "A task to deploy a set of pools")
                     poolData["shares"],
                     timeConfig,
                     JSON.stringify(metadata),
+                    hre.ethers.constants.AddressZero,
                     {
                         value: prepay.toString(),
                     }
@@ -125,6 +139,7 @@ task("deployPools", "A task to deploy a set of pools")
                     poolData["shares"],
                     timeConfig,
                     JSON.stringify(metadata),
+                    hre.ethers.constants.AddressZero,
                     {
                         value: prepay.toString(),
                         gasLimit: estimated.mul(2).toString()
@@ -166,5 +181,5 @@ task("deployPools", "A task to deploy a set of pools")
             
             outPools.push(_out);
         }
-        fs.writeFileSync(outputConfigFile, JSON.stringify({outPools: outPools}, null, 2))
+        fs.writeFileSync(outputFile, JSON.stringify({outPools: outPools}, null, 2))
     })

@@ -1,9 +1,9 @@
 import { subtask } from "hardhat/config";
 import fs from 'fs';
-import { contractAt, deployerContract } from "./utils/contract-utils";
-import { findEvent } from "./utils/transaction";
+import { contractAt, deployerContract } from "../../utils/contract-utils";
+import { findEvent } from "../../utils/transaction";
 import * as path from 'path';
-import { checkCreatorAddress } from "./utils/deploy-utils";
+import { checkCreatorAddress } from "../../utils/deploy-utils";
 
 subtask("deployTreasuryPool", "Deploy a new Treasury Pool")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")

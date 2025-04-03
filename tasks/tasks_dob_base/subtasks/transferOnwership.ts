@@ -1,8 +1,8 @@
 import { subtask } from "hardhat/config";
 import fs from 'fs';
-import { deployerContract, contractAt } from "./utils/contract-utils";
+import { deployerContract, contractAt } from "../../utils/contract-utils";
 import * as path from 'path';
-import { checkCreatorAddress } from "./utils/deploy-utils";
+import { checkCreatorAddress } from "../../utils/deploy-utils";
 import { error } from "console";
 
 subtask("transferOwnership", "transfer ownership of poolmaster and storage")

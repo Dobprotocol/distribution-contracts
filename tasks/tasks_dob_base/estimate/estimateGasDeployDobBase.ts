@@ -1,32 +1,26 @@
 import { task } from "hardhat/config";
 import fs from 'fs';
 import * as path from 'path';
-import "./subtasks/deployLogic";
-import "./subtasks/deployPoolMaster";
-import "./subtasks/deployStorage";
-import "./subtasks/deployTreasuryPool";
-import "./subtasks/deployTokenSaleMarket";
-import "./subtasks/transferOnwership";
-import { checkCreatorAddress } from "./subtasks/utils/deploy-utils";
-import { estimateContractGas} from "./subtasks/utils/contract-utils";
+import { checkCreatorAddress } from "../../utils/deploy-utils";
+import { estimateContractGas} from "../../utils/contract-utils";
 import { BigNumber } from "ethers";
 
 
 task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base contracts for Dob enviroment")
-    .addOptionalParam("inputConfigFile", "Name of the input config to use", "dob_base.json")
+    .addOptionalPositionalParam("configFile", "Path to the config file to use for the deploy")
     .setAction(async (taskArgs, hre) =>{
-        const now = new Date();
-        let inputConfigFile = path.join(
-            __dirname, "configs", 
-            taskArgs.inputConfigFile);
+        // check files exsits
+        if (!fs.existsSync(taskArgs.configFile)){
+            throw new Error("config file does not exist")
+        }
         let inData = JSON.parse(fs.readFileSync(
-            path.join(inputConfigFile), 'utf8'));
+            path.join(taskArgs.configFile), 'utf8'));
         const accounts = await hre.ethers.getSigners();
         if (!checkCreatorAddress(accounts,inData)){
             console.log("trowing error")
             throw new Error("creator address does not match")
         }
-        const avg_gas_price = BigNumber.from("70000000")
+        const avg_gas_price = await hre.ethers.provider.getGasPrice()
         console.log("avg gasPrice -> \t", hre.ethers.utils.formatEther(avg_gas_price.toString()))
         const limit_gas_price = avg_gas_price.mul(BigNumber.from(2))
         console.log("limit gasPrice -> \t", hre.ethers.utils.formatEther(limit_gas_price.toString()))
@@ -113,14 +107,4 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
             .add(proxy)
 
         console.log("total -> \t\t\t", hre.ethers.utils.formatEther(total.toString()))
-
-        // await hre.run("deployPoolMaster", argFiles)
-        // await new Promise(f => setTimeout(f, 1000));
-        // await hre.run("deployLogic", argFiles)
-        // await new Promise(f => setTimeout(f, 1000));
-        // await hre.run("deployTreasuryPool", argFiles)
-        // await new Promise(f => setTimeout(f, 1000));
-        // await hre.run("deployTokenSaleMarket", argFiles)
-        // await new Promise(f => setTimeout(f, 1000));
-        // await hre.run("transferOwnership", argFiles)
     })
