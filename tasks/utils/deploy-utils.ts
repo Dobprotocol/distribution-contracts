@@ -1,6 +1,7 @@
 // import { Contract, Signer } from "ethers"
 import { ethers } from "ethers";
 import { deployerContract, getRangeFirstDayOfMonth } from "./contract-utils";
+import * as path from 'path';
 
 // accountCreator: Signer
 // hre: Hardhat Runtime Environment (HRE)
