@@ -36,4 +36,4 @@ typechain-types
 *.csv
 *.zip
 
-tasks/deploys/*.json
+outputs/
