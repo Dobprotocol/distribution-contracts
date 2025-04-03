@@ -24,7 +24,7 @@ import "../core/LogicProxiable.sol";
 
 // libs
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
 contract PoolMaster is
@@ -121,10 +121,9 @@ contract PoolMaster is
             _totalShare = _totalShare.add(shares[i]);
         }
         require(
-            _totalShare < 100000,
-            "total shares cannot be higher than 100000"
+            _totalShare < 500,
+            "total shares cannot be higher than 500"
         );
-        _totalShare = _totalShare.mul(1000000000000000000);
 
         token.mint_participants(
             _totalShare, 
@@ -218,6 +217,17 @@ contract PoolMaster is
         return poolAddress;
     }
 
+    function _checkParticipationToken(address token) internal view returns (bool) {
+        ERC20 t = ERC20(token);
+        require(
+            t.totalSupply() <= 500, 
+            "INVALID_PARTICIPATION_TOKEN");
+        require(
+            t.decimals() == 0, 
+            "INVALID_PARTICIPATION_TOKEN");
+        return true;
+    }
+
     /**************************** */
     /**************************** */
     // getters
@@ -293,6 +303,10 @@ contract PoolMaster is
             participationToken = createParticipationToken(
                 users, shares, false
             );
+        } else {
+            // existent participation token must have no more than 500 total supply 
+            // and 0 decimals
+            _checkParticipationToken(participationToken);
         }
         _creatGeneralParticipationPool(
             users[0],
@@ -418,6 +432,10 @@ contract PoolMaster is
             participationToken = createParticipationToken(
                 users, shares, false
             );
+        } else {
+            // existent participation token must have no more than 500 total supply 
+            // and 0 decimals
+            _checkParticipationToken(participationToken);
         }
         _creatGeneralParticipationPool(
             users[0],
