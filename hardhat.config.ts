@@ -95,6 +95,11 @@ module.exports = {
       url: "https://mainnet.base.org/",
       accounts:
       process.env.ACCOUNT_BASE?.split(",")
+    },
+    basesepolia: {
+      url: process.env.BASE_SEPOLIA_URL ||"https://base-sepolia.drpc.org",
+      accounts:
+      process.env.ACCOUNT_BASE?.split(",")
     }
   },
   etherscan: {
