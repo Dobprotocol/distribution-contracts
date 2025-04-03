@@ -1,9 +1,5 @@
 import { task } from "hardhat/config";
-import fs from 'fs';
-import * as path from 'path';
-import { contractAt, upgradeContract } from "./subtasks/utils/contract-utils";
-import "./subtasks/upgradeContract";
-import { text } from "stream/consumers";
+import { contractAt, } from "../utils/contract-utils";
 
 task("tsmSetSale", "tsmSetSale")
     .addPositionalParam("tsmAddress", "the address for the TSM used")
