@@ -1,66 +1,66 @@
 {
-    "storage": {
-      "address": "0xAe481ee203815f0ce2b2b8e47e649625fFc66916",
-      "contract": "EternalStorage",
-      "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
-    },
-    "poolMaster": {
-      "config": {
-        "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347",
-        "contract": "PoolMasterConfig",
-        "operational": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F",
-        "regression": {
-          "coef": 34813,
-          "intercept": 3217412,
-          "gasPrice": "5000000000"
-        },
-        "commission": 300
+  "storage": {
+    "address": "0xAe481ee203815f0ce2b2b8e47e649625fFc66916",
+    "contract": "EternalStorage",
+    "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+  },
+  "poolMaster": {
+    "config": {
+      "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347",
+      "contract": "PoolMasterConfig",
+      "operational": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F",
+      "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "5000000000"
       },
-      "deployer": {
-        "address": "0xa6Dc6eb781B51Da94e470a868b71295Cd5609080",
-        "contract": "PoolMaster"
-      },
-      "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+      "commission": 300
     },
-    "poolLogic": [
-      {
-        "address": "0x5263B4EEcfcB0b7eF324E0c755f794Bcf2572615",
-        "versionNumber": "1"
+    "deployer": {
+      "address": "0xa6Dc6eb781B51Da94e470a868b71295Cd5609080",
+      "contract": "PoolMaster"
+    },
+    "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+  },
+  "poolLogic": [
+    {
+      "address": "0x5263B4EEcfcB0b7eF324E0c755f794Bcf2572615",
+      "versionNumber": "1"
+    }
+  ],
+  "treasury": {
+    "address": "0x69bA7aAc28c3CAfD22dc0a9Ea0767Ecb8eda98e1",
+    "ParticipationToken": {
+      "address": "0x79f33891b30aCD710E8b20D660EeB98817f4c222",
+      "name": "DobToken"
+    },
+    "owner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
+    "logicVersion": "1"
+  },
+  "tokenSaleMarket": [
+    {
+      "address": "0x29076a1b1Dc5d842152D74569a8d02CBb01170E3",
+      "contract": "LogicProxy",
+      "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
+      "logic": {
+        "address": "0x35E4A1fA9e5159f6372637F3f03749D7884eD20F",
+        "contract": "TokenSaleMarket"
+      },
+      "commission": 0
+    },
+    {
+      "address": "0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD",
+      "contract": "LogicProxy",
+      "owner": "0x2de047cA4211b28AE2484BC1b9741044C2028261",
+      "logic": {
+        "address": "0xEB3Dfc2379B81A5Fd8dccc2405A3Cc509DfF7Ae2",
+        "contract": "TokenSaleMarket"
+      },
+      "commission": 0,
+      "storage": {
+        "address": "0x205dc1A980cC1B3b160cC8D57ee95FFed7127C3f",
+        "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
       }
-    ],
-    "treasury": {
-      "address": "0x69bA7aAc28c3CAfD22dc0a9Ea0767Ecb8eda98e1",
-      "ParticipationToken": {
-        "address": "0x79f33891b30aCD710E8b20D660EeB98817f4c222",
-        "name": "DobToken"
-      },
-      "owner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
-      "logicVersion": "1"
-    },
-    "tokenSaleMarket": [
-      {
-        "address": "0x29076a1b1Dc5d842152D74569a8d02CBb01170E3",
-        "contract": "LogicProxy",
-        "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
-        "logic": {
-          "address": "0x35E4A1fA9e5159f6372637F3f03749D7884eD20F",
-          "contract": "TokenSaleMarket"
-        },
-        "commission": 0
-      },
-      {
-        "address": "0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD",
-        "contract": "LogicProxy",
-        "owner": "0x2de047cA4211b28AE2484BC1b9741044C2028261",
-        "logic": {
-          "address": "0xEB3Dfc2379B81A5Fd8dccc2405A3Cc509DfF7Ae2",
-          "contract": "TokenSaleMarket"
-        },
-        "commission": 0,
-        "storage": {
-          "address": "0x205dc1A980cC1B3b160cC8D57ee95FFed7127C3f",
-          "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
-        }
-      }
-    ]
-  }
+    }
+  ]
+}
