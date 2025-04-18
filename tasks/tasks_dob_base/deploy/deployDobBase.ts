@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import fs from 'fs';
 import * as path from 'path';
-import { checkCreatorAddress } from "../../utils/deploy-utils";
+import { getSigner } from "../../utils/simulation-utils";
 import "../subtasks/deployStorage";
 import "../subtasks/deployLogic";
 import "../subtasks/deployPoolMaster";
@@ -11,6 +11,7 @@ import "../subtasks/transferOnwership";
 
 task("deployDobBase", "A task to deploy base contracts for Dob enviroment")
     .addPositionalParam("configFile", "Path to the config file to use for the deploy")
+    .addPositionalParam("creatorAddress", "The address that will deploy the contracts. Must match the private key from .env file")
     .addOptionalParam("outputFile", "Path to the output config file. By default uses tasks/outputs/deployDobBase/output_<datetime>.json", "")
     .addOptionalParam("estimateOnly", "if enabled, it will only estimate the deployment cost", "false")
     .setAction(async (taskArgs, hre) =>{
@@ -26,7 +27,7 @@ task("deployDobBase", "A task to deploy base contracts for Dob enviroment")
 
         // if estimate_only enabled, call that trask
         if (taskArgs.estimateOnly === "true"){
-            await hre.run("estimateGasDeployDobBase", {configFile: taskArgs.configFile})
+            await hre.run("estimateGasDeployDobBase", {configFile: taskArgs.configFile, creatorAddress: taskArgs.creatorAddress})
             return
         }// else, proceed
 
@@ -46,12 +47,11 @@ task("deployDobBase", "A task to deploy base contracts for Dob enviroment")
         }
 
         // check creator address
-        let inData = JSON.parse(fs.readFileSync(
-            path.join(taskArgs.configFile), 'utf8'));
         const accounts = await hre.ethers.getSigners();
-        if (!checkCreatorAddress(accounts,inData)){
-            console.log("trowing error")
-            throw new Error("creator address does not match")
+        try {
+            const creator = getSigner(taskArgs.creatorAddress, accounts)
+        } catch (error) {
+            throw new Error(`creator address '${taskArgs.creatorAddress}' does not match`)
         }
 
         // if outputfile exists, open it
@@ -67,7 +67,8 @@ task("deployDobBase", "A task to deploy base contracts for Dob enviroment")
         // prepar inputs and call sub-tasks
         let argFiles = {
             "outputConfigFile": outputFile,
-            "inputConfigFile": taskArgs.configFile
+            "inputConfigFile": taskArgs.configFile,
+            "creatorAddress": taskArgs.creatorAddress
         }
         if ("storage" in outData){
             console.log("SKIP: storage already deployed")

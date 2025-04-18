@@ -1,13 +1,14 @@
 import { task } from "hardhat/config";
 import fs from 'fs';
 import * as path from 'path';
-import { checkCreatorAddress } from "../../utils/deploy-utils";
 import { estimateContractGas} from "../../utils/contract-utils";
 import { BigNumber } from "ethers";
+import { getSigner } from "../../utils/simulation-utils";
 
 
 task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base contracts for Dob enviroment")
     .addOptionalPositionalParam("configFile", "Path to the config file to use for the deploy")
+    .addOptionalPositionalParam("creatorAddress", "The address that will deploy the contracts. Must match the private key from .env file")
     .setAction(async (taskArgs, hre) =>{
         // check files exsits
         if (!fs.existsSync(taskArgs.configFile)){
@@ -16,10 +17,7 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
         let inData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.configFile), 'utf8'));
         const accounts = await hre.ethers.getSigners();
-        if (!checkCreatorAddress(accounts,inData)){
-            console.log("trowing error")
-            throw new Error("creator address does not match")
-        }
+        const creator = getSigner(taskArgs.creatorAddress, accounts)
         const avg_gas_price = await hre.ethers.provider.getGasPrice()
         console.log("avg gasPrice -> \t", hre.ethers.utils.formatEther(avg_gas_price.toString()))
         const limit_gas_price = avg_gas_price.mul(BigNumber.from(2))
@@ -28,7 +26,7 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
         let storage: BigNumber = await estimateContractGas(
             hre, inData["contracts"]["storage"], {}, false, {}, 
             [], 
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         storage = storage.mul(limit_gas_price)
         
         console.log("storage -> \t\t\t", hre.ethers.utils.formatEther(storage.toString()))
@@ -38,13 +36,13 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
             [
                 hre.ethers.constants.AddressZero
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         let poolMasterConfigProxy = await estimateContractGas(
             hre, inData["contracts"]["proxy"], {}, false, {}, 
             [
                 hre.ethers.constants.AddressZero, "Pool.master.config.proxy"
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         poolMasterConfigLogic = poolMasterConfigLogic.mul(limit_gas_price)
         poolMasterConfigProxy = poolMasterConfigProxy.mul(limit_gas_price)
         console.log("pool master config logic -> \t", hre.ethers.utils.formatEther(poolMasterConfigLogic.toString()))
@@ -55,13 +53,13 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
             [
                 hre.ethers.constants.AddressZero
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         let poolMasterDeployerProxy = await estimateContractGas(
             hre, inData["contracts"]["proxy"], {}, false, {}, 
             [
                 hre.ethers.constants.AddressZero, "Pool.master.deployer.proxy"
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         poolMasterDeployerLogic = poolMasterDeployerLogic.mul(limit_gas_price)
         poolMasterDeployerProxy = poolMasterDeployerProxy.mul(limit_gas_price)
         console.log("pool master deployer logic -> \t", hre.ethers.utils.formatEther(poolMasterConfigLogic.toString()))
@@ -72,7 +70,7 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
             [
                 hre.ethers.constants.AddressZero
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
 
         logic = logic.mul(limit_gas_price)
         console.log("participation pool logic -> \t", hre.ethers.utils.formatEther(logic.toString()))
@@ -86,7 +84,7 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
                 hre.ethers.constants.AddressZero,
                 // {gasPrice: "7000000000"}
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         let proxy = await estimateContractGas(
             hre, inData["contracts"]["proxy"], {}, false, {},
             [
@@ -94,7 +92,7 @@ task("estimateGasDeployDobBase", "A task to estimate the deploy cost of base con
                 "TSMProxy",
                 // {gasPrice: "7000000000"}
             ],
-            accounts[inData["addressIds"]["creator"]]
+            creator
         )
         tokenSaleMarketLogic = tokenSaleMarketLogic.mul(limit_gas_price)
         proxy = proxy.mul(limit_gas_price)

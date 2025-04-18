@@ -2,21 +2,22 @@ import { subtask } from "hardhat/config";
 import fs from 'fs';
 import { deployerContract, contractAt } from "../../utils/contract-utils";
 import * as path from 'path';
-import { checkCreatorAddress } from "../../utils/deploy-utils";
+import { getSigner } from "../../utils/simulation-utils";
 
 subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
     .addPositionalParam("inputConfigFile", "Path to input config to use")
+    .addPositionalParam("creatorAddress", "The address that will deploy the contracts. Must match the private key from .env file")
     .setAction(async (taskArgs, hre) =>{
         console.log("deploy token sale market...")
         const accounts = await hre.ethers.getSigners();
+        const creator = getSigner(taskArgs.creatorAddress, accounts);
+
         let inData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.inputConfigFile), 'utf8'));
         let outData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.outputConfigFile), 'utf8'));
-        if (!checkCreatorAddress(accounts,inData)){
-            throw Error("creator address does not match")
-        }
+
         let gasLimitMultiplier = 2
         if ("gasLimitMultiplier" in inData){
             gasLimitMultiplier = inData["gasLimitMultiplier"]
@@ -29,7 +30,7 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
                 outData["storage"]["address"],
                 // {gasPrice: gasPrice}
             ],
-            accounts[inData["addressIds"]["creator"]]);
+            creator);
         console.log("tokenSaleMarketLogic.address", tokenSaleMarketLogic.address)
         console.log("deploy tokenSaleMarketProxy")
         let proxy = await deployerContract(
@@ -39,7 +40,7 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
                 "TSMProxy",
                 // {gasPrice: gasPrice}
             ],
-            accounts[inData["addressIds"]["creator"]]
+            creator
         )
         console.log("proxy.addres", proxy.address)
         console.log("done deploys")
@@ -50,9 +51,9 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             hre, outData["storage"]["contract"], 
             outData["storage"]["address"]);
         console.log("->grant role to logic")
-        estimated = await storage.connect(accounts[inData["addressIds"]["creator"]])
+        estimated = await storage.connect(creator)
             .estimateGas.grantUserRole(tokenSaleMarketLogic.address);
-        txData = await storage.connect(accounts[inData["addressIds"]["creator"]])
+        txData = await storage.connect(creator)
             .functions.grantUserRole(
                 tokenSaleMarketLogic.address, 
                 // {
@@ -62,9 +63,9 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             );
         resData = await txData.wait();
         console.log("->grant role to proxy")
-        estimated = await storage.connect(accounts[inData["addressIds"]["creator"]])
+        estimated = await storage.connect(creator)
             .estimateGas.grantUserRole(proxy.address);
-        txData = await storage.connect(accounts[inData["addressIds"]["creator"]])
+        txData = await storage.connect(creator)
             .functions.grantUserRole(
                 proxy.address, 
                 // {
@@ -74,9 +75,9 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             );
         resData = await txData.wait();
         console.log("->initialize proxy")
-        estimated = await proxy.connect(accounts[inData["addressIds"]["creator"]])
+        estimated = await proxy.connect(creator)
             .estimateGas.initLogic(tokenSaleMarketLogic.address);
-        txData = await proxy.connect(accounts[inData["addressIds"]["creator"]])
+        txData = await proxy.connect(creator)
             .functions.initLogic(
                 tokenSaleMarketLogic.address, 
                 // {
@@ -88,11 +89,11 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
         console.log("->attach abi")
         let tsmProxy = tokenSaleMarketLogic.attach(proxy.address);
         console.log("->initialize logic through proxy")
-        estimated = await tsmProxy.connect(accounts[inData["addressIds"]["creator"]])
+        estimated = await tsmProxy.connect(creator)
             .estimateGas.initialize(
                 inData["addressIds"]["tokenSaleMarketOwner"],
                 inData["commission"]["tokenSaleMarket"])
-        txData = await tsmProxy.connect(accounts[inData["addressIds"]["creator"]])
+        txData = await tsmProxy.connect(creator)
             .functions.initialize(
                 inData["addressIds"]["tokenSaleMarketOwner"],
                 inData["commission"]["tokenSaleMarket"]),

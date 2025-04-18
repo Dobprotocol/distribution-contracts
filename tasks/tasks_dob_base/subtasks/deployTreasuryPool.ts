@@ -3,27 +3,27 @@ import fs from 'fs';
 import { contractAt, deployerContract } from "../../utils/contract-utils";
 import { findEvent } from "../../utils/transaction";
 import * as path from 'path';
-import { checkCreatorAddress } from "../../utils/deploy-utils";
+import { getSigner } from "../../utils/simulation-utils";
 
 subtask("deployTreasuryPool", "Deploy a new Treasury Pool")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
     .addPositionalParam("inputConfigFile", "Path to input config to use")
+    .addPositionalParam("creatorAddress", "The address that will deploy the contracts. Must match the private key from .env file")
     .setAction(async (taskArgs, hre) =>{
         console.log("Deploy treasury...")
         const accounts = await hre.ethers.getSigners();
-        console.log("->ACCOUNTS LENGTH:", accounts.length);
+        const creator = getSigner(taskArgs.creatorAddress, accounts);
+
         let inData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.inputConfigFile), 'utf8'));
         let outData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.outputConfigFile), 'utf8'));
-        if (!checkCreatorAddress(accounts,inData)){
-            throw Error("creator address does not match")
-        }
+
         const poolMaster = await contractAt(
             hre, outData["poolMaster"]["deployer"]["contract"], 
             outData["poolMaster"]["deployer"]["address"]);
         console.log("estimate gas")
-        let estimated = await poolMaster.connect(accounts[inData["addressIds"]["creator"]])
+        let estimated = await poolMaster.connect(creator)
             .estimateGas.createPoolMasterTreasuryPool(
                 [inData["addressIds"]["treasuryOwner"]],
                 [100],
@@ -31,7 +31,7 @@ subtask("deployTreasuryPool", "Deploy a new Treasury Pool")
             )
         console.log("estimated gas:", estimated.toString())
         console.log("deploy")
-        let txData = await poolMaster.connect(accounts[inData["addressIds"]["creator"]])
+        let txData = await poolMaster.connect(creator)
             .functions.createPoolMasterTreasuryPool(
                 [inData["addressIds"]["treasuryOwner"]],
                 [100],

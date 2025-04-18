@@ -1,6 +1,7 @@
 // import { Contract, Signer } from "ethers"
 import { ethers } from "ethers";
 import { deployerContract, getRangeFirstDayOfMonth } from "./contract-utils";
+import { getSigner } from "./simulation-utils";
 import * as path from 'path';
 
 // accountCreator: Signer
@@ -176,18 +177,4 @@ export async function deployPool(hre, poolMaster, pmCreator, expectedPoolsNumber
     //     }).catch((err) => console.error("event createPool :", err));
     // console.log("Pool depoyed at: ", poolsAddress[poolsAddress.length - 1]);
     return poolsAddress;
-}
-
-export function checkCreatorAddress(accounts, inData): boolean{
-    let addressFromPriv = accounts[inData["addressIds"]["creator"]].address;
-    let addressExpected = inData["addressIds"]["creatorExpected"]
-    if (addressFromPriv != addressExpected){
-        console.log(
-            "creator address priv key does not match expected address", 
-            "expected:", addressExpected,
-            "current:", addressFromPriv
-        )
-        return false;
-    }
-    return true;
 }
