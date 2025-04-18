@@ -9,7 +9,8 @@ import "@nomicfoundation/hardhat-verify";
 // import dob_base tasks
 import "./tasks/tasks_dob_base/deploy/deployDobBase"
 import "./tasks/tasks_dob_base/deploy/deployNewLogic"
-import "./tasks/tasks_dob_base/deploy/deployPools"
+import "./tasks/tasks_dob_base/deploy/deployNewPoolVersion"
+import "./tasks/tasks_dob_base/deploy/deployPool"
 import "./tasks/tasks_dob_base/deploy/deployTreasuryDistributionPool"
 import "./tasks/tasks_dob_base/estimate/estimateGasDeployDobBase"
 import "./tasks/tasks_dob_base/get/getPoolInfo"
