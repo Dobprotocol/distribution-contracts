@@ -106,7 +106,7 @@ module.exports = {
     basesepolia: {
       url: process.env.BASE_SEPOLIA_URL ||"https://base-sepolia.drpc.org",
       accounts:
-      process.env.ACCOUNT_BASE?.split(",")
+      process.env.ACCOUNT_BASE_SEPOLIA?.split(",")
     }
   },
   etherscan: {
