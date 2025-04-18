@@ -115,14 +115,16 @@ contract PoolMaster is
             "Dob Participation Token",
             "PPT"
         );
+        uint256 _sharesLimit = PoolMasterConfigInterface(getPoolMasterConfig())
+            .getSharesLimit();
 
         uint256 _totalShare = 0;
         for (uint256 i = 0; i < shares.length; i++) {
             _totalShare = _totalShare.add(shares[i]);
         }
         require(
-            _totalShare < 500,
-            "total shares cannot be higher than 500"
+            _totalShare < _sharesLimit,
+            "total shares cannot be higher than limit"
         );
 
         token.mint_participants(
@@ -219,8 +221,10 @@ contract PoolMaster is
 
     function _checkParticipationToken(address token) internal view returns (bool) {
         ERC20 t = ERC20(token);
+        uint256 _sharesLimit = PoolMasterConfigInterface(getPoolMasterConfig())
+            .getSharesLimit();
         require(
-            t.totalSupply() <= 500, 
+            t.totalSupply() <= _sharesLimit, 
             "INVALID_PARTICIPATION_TOKEN");
         require(
             t.decimals() == 0, 
@@ -304,7 +308,7 @@ contract PoolMaster is
                 users, shares, false
             );
         } else {
-            // existent participation token must have no more than 500 total supply 
+            // existent participation token must have no more than 'shareLimit' total supply 
             // and 0 decimals
             _checkParticipationToken(participationToken);
         }
@@ -433,7 +437,7 @@ contract PoolMaster is
                 users, shares, false
             );
         } else {
-            // existent participation token must have no more than 500 total supply 
+            // existent participation token must have no more than 'shareLimit' total supply 
             // and 0 decimals
             _checkParticipationToken(participationToken);
         }

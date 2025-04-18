@@ -70,6 +70,15 @@ contract PoolMasterConfig is
         _S.setAddress(_pKey(KeyPrefix.operational), _operational);
         _S.setUint256(_pKey(KeyPrefix.baseCommissionPool), _commission);
         _S.setUint256(_pKey(KeyPrefix.logicVersion), 0);
+        _S.setUint256(_pKey(KeyPrefix.sharesLimit), 300); // for now its fixed to 300
+    }
+
+    function getSharesLimit() external view override returns (uint256) {
+        return _S.getUint256(_pKey(KeyPrefix.sharesLimit));
+    }
+
+    function setSharesLimit(uint256 _sharesLimit) external override onlyOwner {
+        _S.setUint256(_pKey(KeyPrefix.sharesLimit), _sharesLimit);
     }
 
     function getOperationalAddress() external view override returns (address) {
@@ -209,4 +218,5 @@ contract PoolMasterConfig is
     function _authorizeUpgrade(
         address newImplementation
     ) internal virtual override onlyOwner {}
+    
 }
