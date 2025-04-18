@@ -25,6 +25,9 @@ import "./tasks/tasks_tsm/tsmSetSale"
 import "./tasks/tasks_erc20/deployERC20"
 import "./tasks/tasks_erc20/transferToken"
 
+// import currency tasks
+import "./tasks/tasks_currency/transfer"
+
 
 require('hardhat-contract-sizer');
 require('dotenv').config()
