@@ -111,7 +111,8 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      base: process.env.BASE_API_KEY
+      base: process.env.BASE_API_KEY,
+      baseSepolia: process.env.BASE_API_KEY
     }
   },
   sourcify: {
