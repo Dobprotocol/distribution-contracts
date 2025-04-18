@@ -8,8 +8,6 @@
         "proxy": "LogicProxy"
     },
     "addressIds": {
-        "creator": 0,
-        "creatorExpected": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927",
         "storageOwner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d",
         "operational": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F",
         "treasuryOwner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
