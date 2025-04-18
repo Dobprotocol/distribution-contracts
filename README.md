@@ -52,6 +52,7 @@ We have created various Hardhat tasks to facilitate interaction with the contrac
 - `task_dob_base`: Contains dob-related tasks
 - `tasks_erc20`: contains erc20-related tasks
 - `tasks_tsm`: contains TokenSaleMarket-related tasks
+- `task_currency`: Contains currency-related tasks
 
 The currently existent Tasks are:
 
@@ -74,6 +75,51 @@ Each task includes documentation on any required or optional arguments. To get h
 ```sh
 npx hardhat <task-name> --help
 ```
+
+### Task Example cases
+
+#### Upgrading a pool master deploy
+
+In case you need to upgrade a pool master deploy, for example, the [deploy_base_sepolia_testnet.json](./deploys/deploy_base_sepolia_testnet.json), the steps you need to follow are:
+
+1. add the private key of the owner of the poolMasters to `.env` file under the key `ACCOUNT_BASE_SEPOLIA`. Here you can add as many private keys as you want
+2. compile the contracts with
+
+    ```bash
+    npx hardhat compile
+    ```
+    make sure to use node 16
+
+3. execute the task to upgrade, for example, to upgrade our base sepolia deploy:
+
+    ```bash
+    npx hardhat --network basesepolia upgradePoolMaster ./deploys/deploy_base_sepolia_testnet.json 0x5736E3A05b34214c4757fB331682e95fF67cCd5d
+    ```
+
+    where the address must match the owner of the pool master and its private keys must be present in the environment variable `ACCOUNT_BASE_SEPOLIA`. This task will deploy new logic versions for `PoolMaster` and `PoolMasterConfig`, and then execute the upgrade calls on the proxies. The new logic are stored in the same deploy file (`./deploys/deploy_base_sepolia_testnet.json`) as a new entry in a list of logic versions.
+
+#### Upgrading a pool logic version in the pool master
+
+The poolMasterConfig has a pool logic version history structure, where it stores all the historic logic versions for pools. This allow for each pool to decide when and to what version should they upgrade. Each pool version will always be functional.
+
+For example, to deploy a new pool version to our [Base Sepolia Deploy](./deploys/deploy_base_sepolia_testnet.json) we do:
+
+1. add the private key of the owner of the poolMasters to `.env` file under the key `ACCOUNT_BASE_SEPOLIA`. Here you can add as many private keys as you want
+2. compile the contracts with
+
+    ```bash
+    npx hardhat compile
+    ```
+    make sure to use node 16
+3. execute task to deploy new logic
+
+    ```bash
+    npx hardhat --network basesepolia deployNewPoolVersion ./deploys/deploy_base_sepolia_testnet.json
+    ```
+
+    The task will validate that the owner address (present in the deploy .json file) has its private key in the `.env` file. Once complete, the task will add the new logic version 
+
+
 
 # Current Working Deploys
 
