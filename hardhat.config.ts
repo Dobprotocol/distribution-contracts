@@ -18,6 +18,7 @@ import "./tasks/tasks_dob_base/get/getPoolMasterConfigInfo"
 import "./tasks/tasks_dob_base/upgrade/upgradePool"
 import "./tasks/tasks_dob_base/upgrade/upgradePoolMaster"
 import "./tasks/tasks_dob_base/upgrade/upgradeTokenSaleMarket"
+import "./tasks/tasks_dob_base/set/setSharesLimit"
 
 // import tsm_tasks
 import "./tasks/tasks_tsm/tsmBuyToken"
