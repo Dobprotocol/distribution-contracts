@@ -15,11 +15,29 @@
         "intercept": 3217412,
         "gasPrice": "10000000"
       },
-      "commission": 300
+      "commission": 300,
+      "logic": [
+        {
+          "address": "0x64E7A2472B21b43721daCd09C84dCd3751Dd2191"
+        },
+        {
+          "contract": "PoolMasterConfig",
+          "address": "0xAe481ee203815f0ce2b2b8e47e649625fFc66916"
+        }
+      ]
     },
     "deployer": {
       "address": "0x8b2c81C2BA3dD4F4D8025C43c39084Ab88A70406",
-      "contract": "PoolMaster"
+      "contract": "PoolMaster",
+      "logic": [
+        {
+          "address": "0xF54B22F8632919b1237b27388AcfDCCc1aC43f60"
+        },
+        {
+          "contract": "PoolMaster",
+          "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347"
+        }
+      ]
     },
     "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
   },
@@ -27,6 +45,14 @@
     {
       "address": "0x2f1eAa5021Eae0Dc579B606b819bA33A9695e05e",
       "versionNumber": "1"
+    },
+    {
+      "address": "0x5E251067C1a562C5345764e9dCA8b8b30FccB04d",
+      "versionNumber": "4"
+    },
+    {
+      "address": "0xEc727D69675F2D388410482F35272fFcd5a054CB",
+      "versionNumber": "5"
     }
   ],
   "treasury": {
