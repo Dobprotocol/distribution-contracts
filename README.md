@@ -49,10 +49,13 @@ We have created various Hardhat tasks to facilitate interaction with the contrac
 
 - `configs`: Contains example config `.json` files used to run some tasks.
 - `utils`: contains utility functions.
-- `task_dob_base`: Contains dob-related tasks
-- `tasks_erc20`: contains erc20-related tasks
-- `tasks_tsm`: contains TokenSaleMarket-related tasks
-- `task_currency`: Contains currency-related tasks
+- `task_dob_base`: Contains [dob](./contracts/contract/dob/)-related tasks
+- `tasks_erc20`: contains [ERC20](./contracts/contract/dob/dob_token/dobToken.sol)-related tasks
+- `tasks_tsm`: contains [TokenSaleMarket](./contracts/contract/dob/TokenSaleMarket.sol)-related tasks
+- `task_currency`: Contains Currency-related tasks
+- `tasks_staking`: Contains [Staking](./contracts/contract/staking/LockedStaking.sol)-related tasks
+- `tasks_simple_staking`: Contains [SimpleStaking](./contracts/contract/staking/SimpleLockedStaking.sol)-related tasks
+- `tasks_dob_sale`: Contains [DobSale](./contracts/contract/dob/dob_token/DobSale.sol)-related tasks
 
 The currently existent Tasks are:
 
@@ -69,6 +72,37 @@ The currently existent Tasks are:
 * `upgradePool`: Upgrade a pool logic to a new implementation
 * `upgradePoolMaster`: Deploys a new PoolMaster contract using UUPS upgradeable pattern
 * `upgradeTokenSaleMarket`: Upgrade a token sale market logic to a new implementation
+
+
+* `configureSimpleStaking`: Task to configure a new locked staking setting.
+* `configureStaking`: Task to configure a new locked staking setting.
+* `deployDobBase`: A task to deploy base contracts for Dob environment
+* `deployDobSale`: Task to deploy the smart contract DobSale.
+* `deployERC20`: Task to deploy a ERC20 token and mint initial supply
+* `deployNewLogic`: Deploys a new logic contract and link it to poolMasterConfig
+* `deployNewPoolVersion`: Deploys a new Pool logic version in the PoolMasterConfig
+* `deployPool`: A task to deploy a pool
+* `deploySimpleStaking`: Task to deploy the smart contract to manage locked staking.
+* `deployStaking`: Task to deploy the smart contract to manage locked staking.
+* `deployToken`: Task to deploy the ERC20 Dob Token
+* `deployTreasuryDistributionPool`: A task to deploy a new treasury pool
+* `depositRewardSimpleStaking`: Task to deposit reward tokens to the locked staking smart contract.
+* `depositRewardStaking`: Task to deposit reward tokens to the locked staking smart contract.
+* `estimateGasDeployDobBase`: A task to estimate the deploy cost of base contracts for Dob environment
+* `getPoolInfo`: Get pool info
+* `getPoolMasterConfigInfo`: Get poolMasterConfig info
+* `getProxyImplementation`: Get the proxy implementation address
+* `setSharesLimit`: Set the shares limit in the poolMasterConfig
+* `transfer`: Task to transfer currency between holder address and toAddress
+* `transferOwnershipSimpleStaking`: Task to transfer the ownership of a locked staking smart contract.
+* `transferOwnershipStaking`: Task to transfer the ownership of a locked staking smart contract.
+* `transferToken`: Task to transfer tokens between holder address and toAddress
+* `tsmBuyToken`: tsmBuyToken
+* `tsmSetSale`: tsmSetSale
+* `upgradePool`: Upgrade a pool logic to a new implementation
+* `upgradePoolMaster`: Deploys a new PoolMaster contract using UUPS upgradeable pattern
+* `upgradeTokenSaleMarket`: Upgrade a token sale market logic to a new implementation
+
 
 Each task includes documentation on any required or optional arguments. To get help for a specific task, run:
 
@@ -121,7 +155,7 @@ For example, to deploy a new pool version to our [Base Sepolia Deploy](./deploys
 
 
 
-# Current Working Deploys
+# Current Deploys
 
 * [Base Mainnet](./deploys/deploy_base_mainnet.json)
 * [Base Sepolia Testnet](./deploys/deploy_base_sepolia_testnet.json)
