@@ -1,9 +1,16 @@
 import { HardhatUserConfig } from "hardhat/config";
-// import "@nomicfoundation/hardhat-toolbox";
-// import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-verify";
+
+// TODO: the modules hardhat-toolbox and hardhat-upgrades have collision with hardhat-verify
+// so depending on the use case you plan you must enable one or another
+// 
+// if you want to run tests and develop code, then use hardhat-toolbox and upgrades
+import "@nomicfoundation/hardhat-toolbox";
+import '@openzeppelin/hardhat-upgrades';
+// if you want to verify a deploy, then disable the other 2 modules and use hardhat-verify
+// import "@nomicfoundation/hardhat-verify";
+//
 
 
 // import dob_base tasks
@@ -31,6 +38,24 @@ import "./tasks/tasks_erc20/transferToken"
 
 // import currency tasks
 import "./tasks/tasks_currency/transfer"
+
+// staking tasks
+import "./tasks/staking/deployStaking"
+import "./tasks/staking/depositRewardStaking"
+import "./tasks/staking/configureStaking"
+import "./tasks/staking/transferOwnershipStaking"
+
+// simple staking tasks
+import "./tasks/simpleStaking/deployStaking"
+import "./tasks/simpleStaking/depositRewardStaking"
+import "./tasks/simpleStaking/configureStaking"
+import "./tasks/simpleStaking/transferOwnershipStaking"
+
+// erc20 tasks
+import "./tasks/erc20/deployToken"
+
+// DobSale tasks
+import "./tasks/dob_sale/deployDobSale"
 
 
 require('hardhat-contract-sizer');
