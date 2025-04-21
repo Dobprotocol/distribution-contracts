@@ -69,4 +69,8 @@ contract ParticipationToken is ERC20Pausable, Initializable, ParticipationTokenI
             _mint(usersAddress[i], _amount);
         }
     }
+
+    function decimals() public pure override returns (uint8) {
+        return 0;
+    }
 }

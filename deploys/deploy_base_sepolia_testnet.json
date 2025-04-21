@@ -1,0 +1,77 @@
+{
+  "network": "basesepolia",
+  "storage": {
+    "address": "0x2A4Ea08F419a87ab0f498593fBE8aE36DA5d8581",
+    "contract": "EternalStorage",
+    "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927"
+  },
+  "poolMaster": {
+    "config": {
+      "address": "0x4Fe43E69732D30c938C8C6c7ccdd8a6507c8Eb1C",
+      "contract": "PoolMasterConfig",
+      "operational": "0x06Bf2D512d6422ad7d8B441a39ae1Af80a55545F",
+      "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "10000000"
+      },
+      "commission": 300,
+      "logic": [
+        {
+          "address": "0x64E7A2472B21b43721daCd09C84dCd3751Dd2191"
+        },
+        {
+          "contract": "PoolMasterConfig",
+          "address": "0xAe481ee203815f0ce2b2b8e47e649625fFc66916"
+        }
+      ]
+    },
+    "deployer": {
+      "address": "0x8b2c81C2BA3dD4F4D8025C43c39084Ab88A70406",
+      "contract": "PoolMaster",
+      "logic": [
+        {
+          "address": "0xF54B22F8632919b1237b27388AcfDCCc1aC43f60"
+        },
+        {
+          "contract": "PoolMaster",
+          "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347"
+        }
+      ]
+    },
+    "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d"
+  },
+  "poolLogic": [
+    {
+      "address": "0x2f1eAa5021Eae0Dc579B606b819bA33A9695e05e",
+      "versionNumber": "1"
+    },
+    {
+      "address": "0x5E251067C1a562C5345764e9dCA8b8b30FccB04d",
+      "versionNumber": "4"
+    },
+    {
+      "address": "0xEc727D69675F2D388410482F35272fFcd5a054CB",
+      "versionNumber": "5"
+    }
+  ],
+  "treasury": {
+    "address": "0x49e83fdEf02aC30f6C8558635ec1B2CE2349db06",
+    "ParticipationToken": {
+      "address": "0x6B70Bcb4912Aff859FA0b5f0851A3F1AC71DFcD6",
+      "name": "DobToken"
+    },
+    "owner": "0x9Da6c74F4B768Ea4422FDBb29ab4905C32C95D74",
+    "logicVersion": "1"
+  },
+  "tokenSaleMarket": {
+    "address": "0x2A11A080BFD698b47e0Ad8a3e0127a8Bbf831613",
+    "contract": "LogicProxy",
+    "owner": "0xc9Be9Aa376D0719Edb751d7f5C163fB04d706e32",
+    "logic": {
+      "address": "0x381725E09F4E85ce1961bdf4Df7EFD7870AC9fE6",
+      "contract": "TokenSaleMarket"
+    },
+    "commission": 0
+  }
+}
