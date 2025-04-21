@@ -55,7 +55,7 @@ import "./tasks/tasks_simple_staking/transferOwnershipStaking"
 import "./tasks/erc20/deployToken"
 
 // DobSale tasks
-import "./tasks/dob_sale/deployDobSale"
+import "./tasks/tasks_dob_sale/deployDobSale"
 
 
 require('hardhat-contract-sizer');
