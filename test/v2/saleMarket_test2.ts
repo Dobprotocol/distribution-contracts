@@ -88,7 +88,7 @@ describe("evaluate limit cases for token sale market", function (){
         // console.log("6. deploy test pool")
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address];
-        poolShares = [860, 140];
+        poolShares = [86, 14];
         pool = await deployParticipationPool(
             _pm, _pmc, poolOwner, poolUsers, poolShares, firstDistributionDate, 999,
             distributionInterval
@@ -101,13 +101,13 @@ describe("evaluate limit cases for token sale market", function (){
             let _acc = getSigner(poolUsers[i], accounts)
             if (_acc != undefined){
                 await token.connect(_acc)
-                    .functions.approve(_proxy.address, (poolShares[i] * 100) - 10000, [])
+                    .functions.approve(_proxy.address, poolShares[i], [])
             }
         }
         tokenAddress = await treasuryPool.connect(operational).functions.getParticipationToken();
         dobToken = await ethers.getContractAt("ParticipationToken", tokenAddress[0]);
         await dobToken.connect(operational)
-            .functions.approve(_proxy.address, 50000, [])
+            .functions.approve(_proxy.address, 300, [])
 
         console.log("::::::::: pre-test done :::::::::")
 
@@ -179,17 +179,17 @@ describe("evaluate limit cases for token sale market", function (){
          * 3.- call buyToken() with amount higher than allowance
          */
         await token.connect(getSigner(poolUsers[0], accounts))
-            .functions.approve(_proxy.address, 4000, [])
+            .functions.approve(_proxy.address, 40, [])
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
                 _salePrice,
                 _minDivision
             )
-        let tokenAmount = BigNumber.from(5000)
-        let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(100))
+        let tokenAmount = BigNumber.from(50)
+        let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(1))
         await expect(
             tsm.connect(accounts[11])
                 .functions.buyToken(
@@ -208,9 +208,9 @@ describe("evaluate limit cases for token sale market", function (){
          */
         console.log("seller balance:", await token.balanceOf(poolUsers[1]));
         await token.connect(getSigner(poolUsers[1], accounts))
-            .functions.approve(_proxy.address, 1000000, [])
-        let _salePrice = ethers.utils.parseUnits("0.00000000000000001", "ether");
-        let _minDivision = 100
+            .functions.approve(_proxy.address, 1000, [])
+        let _salePrice = ethers.utils.parseUnits("0.001", "ether");
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[1], accounts))
             .functions.setSaleProperties(
                 token.address,
@@ -218,7 +218,7 @@ describe("evaluate limit cases for token sale market", function (){
                 _minDivision
             )
         let tokenAmount = (await token.balanceOf(poolUsers[1])).add(_minDivision);
-        let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(100))
+        let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(1))
         console.log("test rejection")
         await expect(
             tsm.connect(accounts[11])
@@ -237,14 +237,14 @@ describe("evaluate limit cases for token sale market", function (){
          * 3.- try to buy token by paying more than expected amount
          */
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
                 _salePrice,
                 _minDivision
             )
-        let tokenAmount = BigNumber.from(5000)
+        let tokenAmount = BigNumber.from(50)
         let ethAmount = tokenAmount.mul(_salePrice).add(_salePrice)
         await expect(
             tsm.connect(accounts[11])
@@ -277,17 +277,17 @@ describe("evaluate limit cases for token sale market", function (){
          * 7.- try to buy 9900 tokens should PASS
          */
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 5
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
                 _salePrice,
                 _minDivision
             )
-        let nTokens = [101, 610, 1, 99]
+        let nTokens = [11, 61, 1, 9]
         for (let _amount of nTokens){
             let tokenAmount = BigNumber.from(_amount)
-            let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(100))
+            let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(_minDivision))
             await expect(
                 tsm.connect(accounts[11])
                     .functions.buyToken(
@@ -297,10 +297,10 @@ describe("evaluate limit cases for token sale market", function (){
                         {value: ethAmount.toString()})
             ).to.be.rejectedWith("nTokenToBuy is not divisible by the minimum division part")
         }
-        nTokens = [100, 9900]
+        nTokens = [10, 65]
         for (let _amount of nTokens){
             let tokenAmount = BigNumber.from(_amount)
-            let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(100))
+            let ethAmount = tokenAmount.mul(_salePrice).div(BigNumber.from(_minDivision))
             await tsm.connect(accounts[11])
                     .functions.buyToken(
                         tokenAmount.toString(), 

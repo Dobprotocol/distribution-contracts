@@ -89,11 +89,13 @@ describe("validate token sale market", function (){
         // console.log("6. deploy test pool")
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address];
-        poolShares = [860, 140];
+        poolShares = [86, 14];
+        console.log("deploy participation pool")
         pool = await deployParticipationPool(
             _pm, _pmc, poolOwner, poolUsers, poolShares, firstDistributionDate, 999,
             distributionInterval
         );
+        console.log("pool deployed")
         
         // console.log("7. set allowance")
         let tokenAddress = await pool.connect(poolOwner).functions.getParticipationToken();
@@ -102,13 +104,13 @@ describe("validate token sale market", function (){
             let _acc = getSigner(poolUsers[i], accounts)
             if (_acc != undefined){
                 await token.connect(_acc)
-                    .functions.approve(_proxy.address, (poolShares[i] * 100) - 10000, [])
+                    .functions.approve(_proxy.address, poolShares[i], [])
             }
         }
         tokenAddress = await treasuryPool.connect(operational).functions.getParticipationToken();
         dobToken = await ethers.getContractAt("ParticipationToken", tokenAddress[0]);
         await dobToken.connect(operational)
-            .functions.approve(_proxy.address, 50000, [])
+            .functions.approve(_proxy.address, 300, [])
 
         console.log("::::::::: pre-test done :::::::::")
     })
@@ -121,7 +123,7 @@ describe("validate token sale market", function (){
          * 4.- check resulting events again
          */
         let _salePrice = ethers.utils.parseUnits("1", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
@@ -148,7 +150,7 @@ describe("validate token sale market", function (){
 
         // set new sale properties
         _salePrice = ethers.utils.parseUnits("0.452", "ether");
-        _minDivision = 3500
+        _minDivision = 2
         txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
@@ -182,7 +184,7 @@ describe("validate token sale market", function (){
          * 4.- check resulting events again
          */
         let _salePrice = ethers.utils.parseUnits("1", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(operational)
             .functions.setInitialSaleProperties(
                 treasuryPool.address,
@@ -209,7 +211,7 @@ describe("validate token sale market", function (){
 
         // set new sale properties
         _salePrice = ethers.utils.parseUnits("0.452", "ether");
-        _minDivision = 3500
+        _minDivision = 3
         txData = await tsm.connect(operational)
             .functions.setInitialSaleProperties(
                 treasuryPool.address,
@@ -242,7 +244,7 @@ describe("validate token sale market", function (){
          * 3.- reject call to buyToken()
          */
         let _salePrice = ethers.utils.parseUnits("1", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
@@ -274,7 +276,7 @@ describe("validate token sale market", function (){
          * 3.- reject calls to buyToken()
          */
         let _salePrice = ethers.utils.parseUnits("1", "ether");
-        let _minDivision = 100
+        let _minDivision = 2
         let txData = await tsm.connect(operational)
             .functions.setInitialSaleProperties(
                 treasuryPool.address,
@@ -310,7 +312,7 @@ describe("validate token sale market", function (){
         let balances = await getBalances(accounts, [token], ["token"]);
         console.log("pool user 0", await token.balanceOf(poolUsers[0]))
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(getSigner(poolUsers[0], accounts))
             .functions.setSaleProperties(
                 token.address,
@@ -320,9 +322,9 @@ describe("validate token sale market", function (){
         let resData = await txData.wait()
         let gasCostSetSale = getGas(txData, resData);
         balances[poolUsers[0]].eth = balances[poolUsers[0]].eth.sub(gasCostSetSale);
-        // allowance was set for 74.000 tokens with minDivision of 100
-        // buy 5400 tokens at 0.001 ETH per token should be 5.4 ETH
-        let tokenAmount = BigNumber.from("5400")
+        // allowance was set for 74 tokens with minDivision of 1
+        // buy 54 tokens at 0.001 ETH per token should be 0.054 ETH
+        let tokenAmount = BigNumber.from("54")
         let ethAmount = ethers.utils.parseUnits("0.054", "ether")
         await tsm.functions
             .estimatePrice(
@@ -389,7 +391,7 @@ describe("validate token sale market", function (){
          */
         let balances = await getBalances(accounts, [dobToken], ["token"]);
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(operational)
             .functions.setInitialSaleProperties(
                 treasuryPool.address,
@@ -399,9 +401,9 @@ describe("validate token sale market", function (){
         let resData = await txData.wait()
         let gasCostSetSale = getGas(txData, resData);
         balances[operational.address].eth = balances[operational.address].eth.sub(gasCostSetSale);
-        // allowance was set for 74.000 tokens with minDivision of 100
-        // buy 5400 tokens at 0.001 ETH per token should be 5.4 ETH
-        let tokenAmount = BigNumber.from("5400")
+        // allowance was set for 74 tokens with minDivision of 1
+        // buy 54 tokens at 0.001 ETH per token should be 5.4 ETH
+        let tokenAmount = BigNumber.from("54")
         let ethAmount = ethers.utils.parseUnits("0.054", "ether")
         console.log("estimate price")
         await tsm.functions
@@ -413,6 +415,7 @@ describe("validate token sale market", function (){
             .then((res) => {
                 expect(res.toString()).to.equal(ethAmount.toString())
             })
+        console.log("execute buyToken")
         txData = await tsm.connect(accounts[11])
             .functions.buyToken(
                 tokenAmount.toString(), 
@@ -420,6 +423,7 @@ describe("validate token sale market", function (){
                 dobToken.address,
                 {value: ethAmount.toString()})
         resData = await txData.wait()
+        console.log("get gas")
         gasCostSetSale = getGas(txData, resData);
         balances[accounts[11].address].eth = balances[accounts[11].address].eth.sub(gasCostSetSale)
         // validate the adquired tokens and the updated balances of each account
@@ -427,7 +431,7 @@ describe("validate token sale market", function (){
         balances[accounts[11].address]["token"] = balances[accounts[11].address]["token"].add(tokenAmount)
         balances[accounts[11].address].eth = balances[accounts[11].address].eth.sub(ethAmount)
         balances[operational.address].eth = balances[operational.address].eth.add(ethAmount)
-
+        console.log("find event")
         let event = findEvent(resData, "BuyRecord");
         expect(event.args.seller).to.equal(operational.address);
         expect(event.args.buyer).to.equal(accounts[11].address);
@@ -466,7 +470,7 @@ describe("validate token sale market", function (){
          */
         let balances = await getBalances(accounts, [dobToken], ["token"]);
         let _salePrice = ethers.utils.parseUnits("0.001", "ether");
-        let _minDivision = 100
+        let _minDivision = 1
         let txData = await tsm.connect(operational)
             .functions.setInitialSaleProperties(
                 treasuryPool.address,
@@ -476,18 +480,18 @@ describe("validate token sale market", function (){
         let resData = await txData.wait()
         let gasCostSetSale = getGas(txData, resData);
         balances[operational.address].eth = balances[operational.address].eth.sub(gasCostSetSale);
-        // allowance was set for 50.000 for initial dob token sale
+        // allowance was set for 300 for initial dob token sale
         // configure many buys
         let buyAccounts = [accounts[11], accounts[15], accounts[9], accounts[8], accounts[13]]
         let buyAmounts = [
-            BigNumber.from("5400"),
-            BigNumber.from("100"),
-            BigNumber.from("9900"),
-            BigNumber.from("1200"),
-            BigNumber.from("19100")
+            BigNumber.from("54"),
+            BigNumber.from("1"),
+            BigNumber.from("99"),
+            BigNumber.from("12"),
+            BigNumber.from("19")
         ]
         for (let k = 0; k < buyAccounts.length; k++){
-            let ethAmount = buyAmounts[k].mul(_salePrice).div(BigNumber.from("100"))
+            let ethAmount = buyAmounts[k].mul(_salePrice).div(BigNumber.from("1"))
             await tsm.functions
                 .estimatePrice(
                     dobToken.address,

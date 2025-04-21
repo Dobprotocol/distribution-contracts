@@ -94,7 +94,7 @@ describe("test multiple distributions of the same pool", function () {
         this.timeout(distributionInterval * 1000 * N) // all tests in this suite get 30 seconds before timeout
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address];
-        poolShares = [860, 140];
+        poolShares = [86, 14];
 
         pool = await deployTreasuryTypePool(
             _pm, _pmc, poolOwner, poolUsers, poolShares, firstDistributionDate, 999,
@@ -149,7 +149,7 @@ describe("test multiple distributions of the same pool", function () {
         this.timeout(distributionInterval * 1000 * N) // all tests in this suite get 30 seconds before timeout
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address];
-        poolShares = [860, 140];
+        poolShares = [86, 14];
 
         let extToken = await deployExternalToken(
             accounts[11], "testToken", "TTD", ethers.utils.parseEther("100").toString())

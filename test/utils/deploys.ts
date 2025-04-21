@@ -105,7 +105,7 @@ export async function deployTreasuryPool(
 ) : Promise<Contract>{
 
     let txData = await _pm.connect(creator)
-        .functions.createPoolMasterTreasuryPool([poolOwner.address], [100], '{"name": "DobTreasury"}');
+        .functions.createPoolMasterTreasuryPool([poolOwner.address], [299], '{"name": "DobTreasury"}');
     
     let txRes = await txData.wait()
     // get deployed pool address and logic version user

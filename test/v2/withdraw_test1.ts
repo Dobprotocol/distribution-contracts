@@ -61,7 +61,7 @@ describe("test multiple withdraws from distributions", function (){
             accounts[4].address, 
             accounts[5].address
         ];
-        poolShares = [660, 140, 199, 1];
+        poolShares = [66, 14, 19, 1];
         pool = await deployTreasuryTypePool(
             _pm, _pmc, poolOwner, poolUsers, poolShares, firstDistributionDate, 999,
             distributionInterval
