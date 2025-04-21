@@ -40,10 +40,10 @@ import "./tasks/tasks_erc20/transferToken"
 import "./tasks/tasks_currency/transfer"
 
 // staking tasks
-import "./tasks/staking/deployStaking"
-import "./tasks/staking/depositRewardStaking"
-import "./tasks/staking/configureStaking"
-import "./tasks/staking/transferOwnershipStaking"
+import "./tasks/tasks_staking/deployStaking"
+import "./tasks/tasks_staking/depositRewardStaking"
+import "./tasks/tasks_staking/configureStaking"
+import "./tasks/tasks_staking/transferOwnershipStaking"
 
 // simple staking tasks
 import "./tasks/simpleStaking/deployStaking"
