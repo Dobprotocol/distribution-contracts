@@ -33,12 +33,6 @@ contract DobSale is ReentrancyGuard, Ownable {
         uint256 value
     );
 
-    // event to track funds earned withdraws
-    event WithdrawFunds(
-        uint256 funds
-
-    );
-
 
     /**
      * @dev Constructor
@@ -102,15 +96,5 @@ contract DobSale is ReentrancyGuard, Ownable {
             cost
         );
     }
-
-    // /**
-    //  * @dev Withdraw all ETH from this contract (collected from sales).
-    //  */
-    // function withdrawFunds() onlyOwner external {
-    //     uint256 balance = address(this).balance;
-    //     require(balance > 0, "No ETH to withdraw");
-    //     payable(msg.sender).transfer(balance);
-    //     emit WithdrawFunds(balance);
-    // }
 
 }
