@@ -30,12 +30,21 @@ contract DobSaleFactory is Ownable {
         commissionAddress = _commissionAddress;
     }
 
+    /**
+     * @dev Creates a new DobSale contract.
+     * @param _paymentToken the token used to pay for Dob tokens, can be 0x0 to use currency for payments.
+     * @param _token the ERC20 token being sold
+     * @param _price the price of 1 token in terms of the payment token
+     * @return the address of the newly created DobSale contract
+     */
     function createDobSale(
+        address _paymentToken,
         address _token,
         uint256 _price
     ) public returns (address) {
         ERC20 token = ERC20(_token);
         DobSale sale = new DobSale(
+            _paymentToken,
             token,
             _price,
             commissionPercent,
