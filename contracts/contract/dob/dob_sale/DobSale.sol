@@ -21,6 +21,11 @@ contract DobSale is ReentrancyGuard, Ownable {
     uint256 public totalSales;  // total amount of tokens sales
     uint256 public totalFunds; // total amount of funds earned
 
+    // add commission percent and address
+    uint256 public commissionPercent;
+    address public commissionAddress;
+
+
     // event to track sales
     event BuyToken(
         address buyer,
@@ -45,13 +50,15 @@ contract DobSale is ReentrancyGuard, Ownable {
      * @param _token Address of the ERC20 token to sell (must implement decimals()).
      * @param _price Wei per 1 full token. (e.g., 1e18 = 1 ETH per token, 1e16 = 0.01 ETH, etc.)
      */
-    constructor(ERC20 _token, uint256 _price) {
+    constructor(ERC20 _token, uint256 _price, uint256 _commissionPercent, address _commissionAddress) {
         require(address(_token) != address(0), "Token address cannot be zero");
         require(_price > 0, "Price must be > 0");
         require(_token.allowance(owner(), address(this)) > 0, "No allowance available"); // check existing allowance
 
         token = _token;
         price = _price;
+        commissionPercent = _commissionPercent;
+        commissionAddress = _commissionAddress;
 
         emit SetPrice(price);
 
@@ -84,6 +91,15 @@ contract DobSale is ReentrancyGuard, Ownable {
         if (msg.value > cost) {
             payable(msg.sender).transfer(msg.value - cost);
         }
+
+        // calculate the commission and the profit for the owner
+        uint256 commission = cost * commissionPercent / 100;
+        uint256 profit = cost - commission;
+        // send the commission to the commission address
+        payable(commissionAddress).transfer(commission);
+        // send the profit to the owner
+        payable(owner()).transfer(profit);
+        
         totalSales += tokenAmount;
         totalFunds += cost;
 
@@ -94,14 +110,14 @@ contract DobSale is ReentrancyGuard, Ownable {
         );
     }
 
-    /**
-     * @dev Withdraw all ETH from this contract (collected from sales).
-     */
-    function withdrawFunds() onlyOwner external {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
-        payable(msg.sender).transfer(balance);
-        emit WithdrawFunds(balance);
-    }
+    // /**
+    //  * @dev Withdraw all ETH from this contract (collected from sales).
+    //  */
+    // function withdrawFunds() onlyOwner external {
+    //     uint256 balance = address(this).balance;
+    //     require(balance > 0, "No ETH to withdraw");
+    //     payable(msg.sender).transfer(balance);
+    //     emit WithdrawFunds(balance);
+    // }
 
 }
