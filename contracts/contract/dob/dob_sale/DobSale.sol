@@ -120,13 +120,4 @@ contract DobSale is ReentrancyGuard, Ownable {
 
         token.transfer(msg.sender, tokenAmount);
     }
-
-    /**
-     * @dev Update the sale price (wei per 1 full token).
-     */
-    function setPrice(uint256 _newPrice) onlyOwner external {
-        require(_newPrice > 0, "Price must be > 0");
-        price = _newPrice;
-        emit SetPrice(price);
-    }
 }
