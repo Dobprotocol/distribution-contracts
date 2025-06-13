@@ -48,6 +48,7 @@ contract DobSale is ReentrancyGuard, Ownable {
     constructor(ERC20 _token, uint256 _price) {
         require(address(_token) != address(0), "Token address cannot be zero");
         require(_price > 0, "Price must be > 0");
+        require(_token.allowance(owner(), address(this)) > 0, "No allowance available"); // check existing allowance
 
         token = _token;
         price = _price;
@@ -75,12 +76,9 @@ contract DobSale is ReentrancyGuard, Ownable {
 
         require(msg.value >= cost, "Not enough ETH sent");
 
-        // Check the contract's token balance
-        uint256 contractBalance = token.balanceOf(address(this));
-        require(contractBalance >= tokenAmount, "Not enough tokens in contract");
-
-        // Transfer tokens to buyer
-        token.transfer(msg.sender, tokenAmount);
+        // try to transfer the tokens
+        // this will revert if not enough allowance is available
+        token.transferFrom(address(this), msg.sender, tokenAmount);
 
         // Refund any excess Ether if the user sent more than required
         if (msg.value > cost) {
@@ -106,18 +104,4 @@ contract DobSale is ReentrancyGuard, Ownable {
         emit WithdrawFunds(balance);
     }
 
-    /**
-     * @dev Withdraw any unsold tokens back to the owner.
-     * @param _amountFullTokens Number of full tokens to withdraw.
-     */
-    function withdrawUnsoldTokens(uint256 _amountFullTokens) onlyOwner external {
-        require(_amountFullTokens > 0, "Amount must be > 0");
-
-        uint256 tokenAmount = _amountFullTokens * (10 ** tokenDecimals);
-
-        uint256 contractBalance = token.balanceOf(address(this));
-        require(contractBalance >= tokenAmount, "Not enough tokens in contract");
-
-        token.transfer(msg.sender, tokenAmount);
-    }
 }
