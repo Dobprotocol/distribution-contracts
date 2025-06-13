@@ -33,11 +33,6 @@ contract DobSale is ReentrancyGuard, Ownable {
         uint256 value
     );
 
-    // event to track price updates
-    event SetPrice(
-        uint256 price
-    );
-
     // event to track funds earned withdraws
     event WithdrawFunds(
         uint256 funds
@@ -59,8 +54,6 @@ contract DobSale is ReentrancyGuard, Ownable {
         price = _price;
         commissionPercent = _commissionPercent;
         commissionAddress = _commissionAddress;
-
-        emit SetPrice(price);
 
         // Read decimals from the token itself
         tokenDecimals = _token.decimals();
