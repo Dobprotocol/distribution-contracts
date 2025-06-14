@@ -42,10 +42,9 @@ contract DobSaleFactory is Ownable {
         address _token,
         uint256 _price
     ) public returns (address) {
-        ERC20 token = ERC20(_token);
         DobSale sale = new DobSale(
             _paymentToken,
-            token,
+            _token,
             _price,
             commissionPercent,
             commissionAddress
