@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+//import logs
+// import "hardhat/console.sol";
+
 /**
  * @title SimpleTokenSale
  * @dev Sells a token at a fixed price in ETH (wei).
@@ -18,9 +21,11 @@ contract DobSale is ReentrancyGuard, Ownable {
     address public paymentToken;
     ERC20 public token;  // The token being sold
     uint8 public tokenDecimals;   // Stored decimals from the token
-    uint256 public price;         // Wei per 1 "full token"
+    uint256 public pricePerToken;         // Wei per 1 "full token"
     uint256 public totalSales;  // total amount of tokens sales
     uint256 public totalFunds; // total amount of funds earned
+    uint256 public totalProfit; // total amount of profit
+    uint256 public totalCommission; // total amount of commission
 
     // add commission percent and address
     uint256 public commissionPercent;
@@ -28,10 +33,10 @@ contract DobSale is ReentrancyGuard, Ownable {
 
 
     // event to track sales
-    event BuyToken(
+    event SaleToken(
         address buyer,
-        uint256 amount,
-        uint256 value,
+        uint256 tokenAmount,
+        uint256 cost,
         uint256 commission,
         uint256 profit
     );
@@ -41,57 +46,64 @@ contract DobSale is ReentrancyGuard, Ownable {
      * @dev Constructor
      * @param _paymentToken Address of the payment token, zero for currency (e.g. ETH)
      * @param _token Address of the ERC20 token to sell (must implement decimals()).
-     * @param _price Wei per 1 full token. (e.g., 1e18 = 1 ETH per token, 1e16 = 0.01 ETH, etc.)
+     * @param _pricePerToken Wei per 1 full token. (e.g., 1e18 = 1 ETH per token, 1e16 = 0.01 ETH, etc.)
      * @param _commissionPercent The commission percent (e.g., 5 = 5%)
      * @param _commissionAddress The address to receive the commission
      */
-    constructor(address _paymentToken, ERC20 _token, uint256 _price, uint256 _commissionPercent, address _commissionAddress) {
-        require(address(_token) != address(0), "Token address cannot be zero");
-        require(_price > 0, "Price must be > 0");
-        require(_token.allowance(owner(), address(this)) > 0, "No allowance available"); // check existing allowance
+    constructor(address _paymentToken, address _token, uint256 _pricePerToken, uint256 _commissionPercent, address _commissionAddress) {
+        require(_token != address(0), "Token address cannot be zero");
+        require(_pricePerToken > 0, "Price must be > 0");
+        // check that if paymentToken is not 0x0, then it must be a valid ERC20 token
+        if (_paymentToken != address(0)) {
+            require(_paymentToken.code.length > 0, "paymentToken address must be 0x0 or a valid contract");
+        }
 
         paymentToken = _paymentToken;
-        token = _token;
-        price = _price;
+        token = ERC20(_token);
+        pricePerToken = _pricePerToken;
         commissionPercent = _commissionPercent;
         commissionAddress = _commissionAddress;
 
         // Read decimals from the token itself
-        tokenDecimals = _token.decimals();
+        tokenDecimals = token.decimals();
     }
 
-    /**
+    /*
      * @dev Buy tokens by specifying how many full tokens (not smallest units) you want.
      *      e.g., if you call `buyToken(1)`, you get exactly 1 * 10^decimals() tokens on-chain.
      * @param _fullTokens The number of whole tokens to buy (1 = 1 full token).
      */
-    function buyToken(uint256 _fullTokens) external payable nonReentrant {
-        require(_fullTokens > 0, "Must buy at least 1 token");
+    function buyToken(uint256 tokenAmount) external payable nonReentrant {
+        require(token.allowance(owner(), address(this)) >= tokenAmount, "Not enough allowance"); // check existing allowance
 
-        // 1 full token (as humans see it) = 10^tokenDecimals on-chain
-        uint256 tokenAmount = _fullTokens * (10 ** tokenDecimals);
+        // Calculate total cost in wei
+        // WARNING: this could overflow
+        uint256 cost = pricePerToken * tokenAmount / (10 ** tokenDecimals);
 
-        // Calculate total cost in wei: price * number of full tokens
-        // (Price is defined as wei per 1 full token.)
-        uint256 cost = price * _fullTokens;
         // calculate the commission and the profit for the owner
         uint256 commission = cost * commissionPercent / 100;
         uint256 profit = cost - commission;
 
         // try to transfer the tokens
         // this will revert if not enough allowance is available
-        token.transferFrom(address(this), msg.sender, tokenAmount);
+        token.transferFrom(owner(), msg.sender, tokenAmount);
 
         if (paymentToken == address(0)) {
+            // process payments in currency
             _processCurrencyPayment(cost, commission, profit);
         } else {
+            // process payments in ERC20 paymentToken
             _processERC20Payment(cost, commission, profit);
         }
         
+        // metrics
         totalSales += tokenAmount;
         totalFunds += cost;
+        totalProfit += profit;
+        totalCommission += commission;
 
-        emit BuyToken(
+        // emit event to record the sale
+        emit SaleToken(
             msg.sender,
             tokenAmount,
             cost,
@@ -101,7 +113,7 @@ contract DobSale is ReentrancyGuard, Ownable {
     }
 
     function _processCurrencyPayment(uint256 cost, uint256 commission, uint256 profit) internal {
-        require(msg.value >= cost, "Not enough ETH sent");
+        require(msg.value >= cost, "Not enough currency sent");
 
         // send the commission to the commission address
         payable(commissionAddress).transfer(commission);
@@ -126,10 +138,15 @@ contract DobSale is ReentrancyGuard, Ownable {
         _paymentToken.transferFrom(msg.sender, owner(), profit);
 
         // refund any excess if the user allowed to spend more than required
-        // TODO: do we really have to refund it???
-        if (_paymentToken.allowance(msg.sender, address(this)) > 0) {
-            _paymentToken.transferFrom(msg.sender, msg.sender, _paymentToken.allowance(msg.sender, address(this)));
-        }
+        // TODO: for now we wont refund excess, user must approve the exact amount.
+        //
+        // if (_paymentToken.allowance(msg.sender, address(this)) > 0) {
+        //     _paymentToken.transferFrom(msg.sender, msg.sender, _paymentToken.allowance(msg.sender, address(this)));
+        // }
+    }
+
+    function estimatePayment(uint256 tokenAmount) public view returns (uint256 cost) {
+        cost = pricePerToken * tokenAmount / (10 ** tokenDecimals);
     }
 
 }
