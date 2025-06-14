@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract DobSaleFactory is Ownable {
     uint256 public commissionPercent;
     address public commissionAddress;
+    // mapping(bytes32 => address) public dobSales;
 
     event DobSaleCreated(
         address indexed owner,
@@ -49,6 +50,9 @@ contract DobSaleFactory is Ownable {
             commissionPercent,
             commissionAddress
         );
+        sale.transferOwnership(msg.sender);
+        // bytes32 sign = getDobSaleSign(msg.sender, _paymentToken, _token, _price);
+        // dobSales[sign] = address(sale);
         emit DobSaleCreated(
             msg.sender,
             _token,
@@ -58,4 +62,15 @@ contract DobSaleFactory is Ownable {
         );
         return address(sale);
     }
+
+    // function getDobSaleSign(address _seller, address _paymentToken, address _token, uint256 _price) public pure returns (bytes32) {
+    //     return keccak256(abi.encodePacked(_seller, _paymentToken, _token, _price));
+    // }
+
+    // function closeDobSale(address _paymentToken, address _token, uint256 _price) public {
+    //     bytes32 _sign = getDobSaleSign(msg.sender, _paymentToken, _token, _price);
+    //     require(dobSales[_sign] != address(0), "DobSale does not exist");
+    //     DobSale(dobSales[_sign]).lockSale();
+    //     dobSales[_sign] = address(0);
+    // }
 }
