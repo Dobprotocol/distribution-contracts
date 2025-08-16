@@ -53,7 +53,9 @@ contract PoolMasterConfig is
 
     constructor(
         address _storage
-    ) AccessStorageOwnableInitializable(_storage, "pool.master.config") {}
+    ) AccessStorageOwnableInitializable(_storage, "pool.master.config") {
+        _disableInitializers();
+    }
 
     function initialize(
         uint256 _coef,

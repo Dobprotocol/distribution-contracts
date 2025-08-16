@@ -90,9 +90,22 @@ subtask("deployPoolMaster", "Deploy a new poolMaster")
         );
         console.log("-> poolMasterConfigLogic address:", poolMasterConfigLogic.address)
         console.log("-> poolMasterConfigProxy address:", poolMasterConfigProxy.address);
+        const configInitData = poolMasterConfigLogic.interface.encodeFunctionData(
+            "initialize",
+            [
+                inData["regression"]["coef"], 
+                inData["regression"]["intercept"],
+                inData["regression"]["gasPrice"],
+                inData["addressIds"]["operational"],
+                inData["commission"]["poolMaster"],
+            ]
+        );
         const initLogicResult = await retryTransaction(
-            () => poolMasterConfigProxy.connect(creator).functions.initLogic(poolMasterConfigLogic.address),
-            "Initialize poolMasterConfigProxy logic"
+            () => poolMasterConfigProxy.connect(creator).functions.initLogicAndCall(
+                poolMasterConfigLogic.address,
+                configInitData
+            ),
+            "Initialize poolMasterConfigProxy logic (atomic)"
         );
         let poolMasterConfig = poolMasterConfigLogic.attach(poolMasterConfigProxy.address)
         let poolMasterDeployerLogic = await deployerContract(
@@ -119,36 +132,25 @@ subtask("deployPoolMaster", "Deploy a new poolMaster")
         console.log("-> poolMasterDeployerProxy address:", poolMasterDeployerProxy.address);
         let estimated;
 
+        const deployerInitData = poolMasterDeployerLogic.interface.encodeFunctionData(
+            "initialize",
+            [
+                poolMasterConfigProxy.address
+            ]
+        );
         estimated = await poolMasterDeployerProxy.connect(creator)
-            .estimateGas.initLogic(poolMasterDeployerLogic.address);
-        console.log("---> estimatedGas for deploer initLogic:", estimated.toString())
+            .estimateGas.initLogicAndCall(poolMasterDeployerLogic.address, deployerInitData);
+        console.log("---> estimatedGas for deployer initLogicAndCall:", estimated.toString())
         const initDeployerLogicResult = await retryTransaction(
-            () => poolMasterDeployerProxy.connect(creator).functions.initLogic(poolMasterDeployerLogic.address, {gasLimit: estimated.toString()}),
-            "Initialize poolMasterDeployerProxy logic"
+            () => poolMasterDeployerProxy.connect(creator).functions.initLogicAndCall(
+                poolMasterDeployerLogic.address,
+                deployerInitData,
+                {gasLimit: estimated.toString()}
+            ),
+            "Initialize poolMasterDeployerProxy logic (atomic)"
         );
         let poolMasterDeployer = poolMasterDeployerLogic.attach(poolMasterDeployerProxy.address)
-        estimated = await poolMasterConfig.connect(creator)
-            .estimateGas.initialize(
-                inData["regression"]["coef"], 
-                inData["regression"]["intercept"],
-                inData["regression"]["gasPrice"],
-                inData["addressIds"]["operational"],
-                inData["commission"]["poolMaster"],
-            )
-        console.log("---> estimateGas for pmconfig initialize:", estimated.toString())
-        const initConfigResult = await retryTransaction(
-            () => poolMasterConfig.connect(creator).functions.initialize(
-                inData["regression"]["coef"], 
-                inData["regression"]["intercept"],
-                inData["regression"]["gasPrice"],
-                inData["addressIds"]["operational"],
-                inData["commission"]["poolMaster"],
-                {
-                    gasLimit: estimated.toString()
-                }
-            ),
-            "Initialize poolMasterConfig"
-        );
+    // No separate initialize on the proxy address is needed; it was done atomically above.
         estimated = await poolMasterDeployer.connect(creator)
             .estimateGas.initialize(
                 poolMasterConfigProxy.address
