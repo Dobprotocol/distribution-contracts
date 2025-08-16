@@ -57,7 +57,7 @@ contract PoolMaster is
     constructor(
         address _storage
     ) AccessStorageOwnableInitializable(_storage, "pool.master") {
-        _disableInitializers();
+    // do not disable initializers at implementation constructor time due to storage access role guards
     }
 
     /**************************** */
