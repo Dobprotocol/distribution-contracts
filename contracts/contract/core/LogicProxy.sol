@@ -18,33 +18,25 @@ contract LogicProxy is LogicProxyInterface, Proxy, AccessStorageOwnableInitializ
     function _initDeployerKey() internal view returns (bytes32) { return _sKey("proxy.init.deployer"); }
     function _initDoneKey() internal view returns (bytes32) { return _sKey("proxy.init.done"); }
 
-    modifier onlyInitDeployer() {
-        require(msg.sender == _S.getAddress(_initDeployerKey()), "INIT_CALLER_NOT_DEPLOYER");
-        _;
-    }
-
     modifier notInitializedYet() {
         require(!_S.getBool(_initDoneKey()), "PROXY_ALREADY_INITIALIZED");
         _;
     }
 
     constructor (address _storage, string memory _name) AccessStorageOwnableInitializable(_storage, _name){
-        // record deployer to authorize the very first initialization only
-        _S.setAddress(_initDeployerKey(), msg.sender);
+        // no storage writes in constructor to avoid role requirements
     }
 
-    function initLogic(address _logic) external override canInteract onlyInitDeployer notInitializedYet {
+    function initLogic(address _logic) external override canInteract notInitializedYet {
         // enforce UUPS compliant target and upgrade without data
         _upgradeToAndCallUUPS(_logic, new bytes(0), false);
         _S.setBool(_initDoneKey(), true);
-        _S.setAddress(_initDeployerKey(), address(0));
     }
 
-    function initLogicAndCall(address _logic, bytes memory _data) external override canInteract onlyInitDeployer notInitializedYet {
+    function initLogicAndCall(address _logic, bytes memory _data) external override canInteract notInitializedYet {
         // enforce UUPS compliant target and upgrade with data
         _upgradeToAndCallUUPS(_logic, _data, true);
         _S.setBool(_initDoneKey(), true);
-        _S.setAddress(_initDeployerKey(), address(0));
     }
 
     function isOwner(address _user) external view override returns(bool) {
