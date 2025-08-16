@@ -121,3 +121,32 @@ C) Hardhat deploy flow updates
 
 - Keep a single owner in the shared Eternal Storage for the proxy+logic pair.
 - Use the proxy init-deployer only for the first initialization authority; do not split or duplicate ownership semantics.
+
+## Addendum (2025-08-16): Correction to init hardening approach
+
+Context: While implementing the plan, we discovered that writing to EternalStorage-backed state during constructors conflicts with our role-gated access pattern. Specifically, `canInteract` checks and `RemoteInitializable` state persistence rely on storage writes that require the proxy/logic address to already have the proper user role. Our deploy/tests grant roles only after deployment, creating a mismatch that can revert or brick contracts when constructors attempt storage writes.
+
+What changed vs. the plan:
+- LogicProxy deployer-only init guard removed: The original plan proposed persisting `proxy.init.deployer` in the proxy constructor and enforcing `onlyInitDeployer` on `initLogic*`. Persisting this in storage during construction caused role-gating conflicts. We removed the deployer-only requirement and retained `canInteract` + `notInitializedYet` checks on `initLogic` and `initLogicAndCall`.
+- No `_disableInitializers()` in logic constructors: The plan recommended locking implementations via `_disableInitializers()` in constructors. In our setup (`AccessStorageOwnableInitializable`/`RemoteInitializable`), initializer flags are stored in EternalStorage, so calling `_disableInitializers()` in constructors also performs storage writes before roles are granted. We avoided this to maintain deploy-time compatibility.
+
+Adopted approach:
+- Avoid any constructor-time writes to EternalStorage across `LogicProxy.sol`, `DistributionPool.sol`, `PoolMaster.sol`, and `PoolMasterConfig.sol`.
+- Keep `initLogic`/`initLogicAndCall` guarded by `canInteract` and a one-time `notInitializedYet` flag, without the deployer-only restriction.
+- Prefer atomic initialization via `initLogicAndCall` in deployment flows to eliminate race windows. Ensure the proxy is granted USER_ROLE immediately before calling `initLogicAndCall` in the same scripted sequence.
+
+Security considerations and mitigations:
+- Risk: Once the proxy has USER_ROLE, any account can call `initLogic*` until the first successful init. Mitigations:
+  - Grant USER_ROLE to the proxy just-in-time and call `initLogicAndCall` atomically within the deploy script.
+  - Optionally, perform the role grant and init from a controlled deployer/admin account and immediately proceed to complete initialization in the same transaction/script step.
+  - For further hardening without constructor storage writes, consider a factory pattern that grants role and calls `initLogicAndCall` within one transaction, or introduce an initialization secret/salt validated by the logic’s `initialize` (passed via calldata), coordinated through the deploy script.
+- UUPS enforcement remains recommended; use `_upgradeToAndCallUUPS` where feasible (subject to the same constructor write constraints) and cover with tests.
+
+Test status:
+- With these corrections, compilation succeeds and the v2 suite passes (all tests green). Behavior aligns with EternalStorage role gating and our deployment timing assumptions.
+
+Documentation and scripts:
+- Update deploy docs and scripts to use the atomic `initLogicAndCall` path and to grant roles immediately before initialization, minimizing exposure.
+
+Rationale summary:
+- EternalStorage + role-gated access means constructors must not write to storage because roles are not yet granted at deploy time. Therefore, deployer-only init tracking in constructor and `_disableInitializers()` in constructors are incompatible with this architecture. The corrected approach preserves safety through atomic init and one-time guards without constructor-time storage writes.
