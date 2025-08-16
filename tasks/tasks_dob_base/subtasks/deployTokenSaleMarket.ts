@@ -74,34 +74,27 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
                 // }
             );
         resData = await txData.wait();
-        console.log("->initialize proxy")
+        console.log("->atomic initialize proxy + logic via initLogicAndCall")
+        const initData = tokenSaleMarketLogic.interface.encodeFunctionData(
+            "initialize",
+            [
+                inData["addressIds"]["tokenSaleMarketOwner"],
+                inData["commission"]["tokenSaleMarket"]
+            ]
+        );
         estimated = await proxy.connect(creator)
-            .estimateGas.initLogic(tokenSaleMarketLogic.address);
+            .estimateGas.initLogicAndCall(tokenSaleMarketLogic.address, initData);
         txData = await proxy.connect(creator)
-            .functions.initLogic(
-                tokenSaleMarketLogic.address, 
+            .functions.initLogicAndCall(
+                tokenSaleMarketLogic.address,
+                initData,
                 // {
                 //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
                 //     gasPrice: gasPrice
                 // }
             );
         resData = await txData.wait();
-        console.log("->attach abi")
-        let tsmProxy = tokenSaleMarketLogic.attach(proxy.address);
-        console.log("->initialize logic through proxy")
-        estimated = await tsmProxy.connect(creator)
-            .estimateGas.initialize(
-                inData["addressIds"]["tokenSaleMarketOwner"],
-                inData["commission"]["tokenSaleMarket"])
-        txData = await tsmProxy.connect(creator)
-            .functions.initialize(
-                inData["addressIds"]["tokenSaleMarketOwner"],
-                inData["commission"]["tokenSaleMarket"]),
-                // {
-                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                //     gasPrice: gasPrice
-                // }
-        resData = await txData.wait();
+        const tsmProxy = tokenSaleMarketLogic.attach(proxy.address);
 
         outData["tokenSaleMarket"] = {
             "address": proxy.address,

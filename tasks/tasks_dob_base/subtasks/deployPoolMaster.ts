@@ -149,20 +149,8 @@ subtask("deployPoolMaster", "Deploy a new poolMaster")
             ),
             "Initialize poolMasterDeployerProxy logic (atomic)"
         );
-        let poolMasterDeployer = poolMasterDeployerLogic.attach(poolMasterDeployerProxy.address)
-    // No separate initialize on the proxy address is needed; it was done atomically above.
-        estimated = await poolMasterDeployer.connect(creator)
-            .estimateGas.initialize(
-                poolMasterConfigProxy.address
-            )
-        console.log("--->estimated gas for deployer initialize:", estimated.toString())
-        const initDeployerResult = await retryTransaction(
-            () => poolMasterDeployer.connect(creator).functions.initialize(
-                poolMasterConfigProxy.address,
-                {gasLimit: estimated.mul(2).toString()}
-            ),
-            "Initialize poolMasterDeployer"
-        );
+    // Attach for convenience; already initialized atomically above
+    let poolMasterDeployer = poolMasterDeployerLogic.attach(poolMasterDeployerProxy.address)
 
         console.log("->operationalId:", inData["addressIds"]["operational"])
         
