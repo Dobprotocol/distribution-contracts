@@ -53,7 +53,10 @@ contract PoolMasterConfig is
 
     constructor(
         address _storage
-    ) AccessStorageOwnableInitializable(_storage, "pool.master.config") {}
+    ) AccessStorageOwnableInitializable(_storage, "pool.master.config") {
+    // do not disable initializers at implementation constructor time, as this contract
+    // interacts with EternalStorage which requires roles that are not granted yet during deployment
+    }
 
     function initialize(
         uint256 _coef,

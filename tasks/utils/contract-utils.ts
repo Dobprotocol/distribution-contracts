@@ -2,27 +2,59 @@
 // return: Promise<Contract>
 // hre: Hardhat Runtime Environment (HRE)
 // signer: Signer
-export async function deployerContract(hre, nameContract: string, libraries = {},
-    upgradable: boolean = false, upgradeOptions = {}, deployArgs: any[] = [],
-    signer) {
-    var contract;  // Contract
-    var factoryOptions: object = {};
-    if (signer === undefined) {
-        factoryOptions = { libraries: libraries }
-    } else {
-        factoryOptions = { libraries: libraries, signer: signer };
-    }
-    const ContracT = await hre.ethers.getContractFactory(
-        nameContract, factoryOptions);
-    if (upgradable) {
-        contract = await hre.upgrades.deployProxy(ContracT, upgradeOptions);
-    } else {
-        contract = await ContracT.deploy(...deployArgs);
-    }
+export async function deployerContract(
+    hre,
+    nameContract: string,
+    libraries = {},
+    upgradable: boolean = false,
+    upgradeOptions = {},
+    deployArgs: any[] = [],
+    signer?,
+    retryConfig: { retries?: number, delayMs?: number, backoffFactor?: number } = {}
+) {
+    // Retry configuration (defaults chosen to keep quick feedback yet resilient)
+    let { retries = 3, delayMs = 3000, backoffFactor = 2 } = retryConfig;
+    // Guard against negative values
+    retries = Math.max(0, retries);
+    delayMs = Math.max(0, delayMs);
+    backoffFactor = backoffFactor <= 0 ? 2 : backoffFactor;
 
-    await contract.deployed();
+    // Helper wait
+    const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-    return contract;
+    let lastError: any;
+    let attempt = 0;
+    let currentDelay = delayMs;
+    while (attempt <= retries) {
+        try {
+            let factoryOptions: object = signer === undefined ? { libraries } : { libraries, signer };
+            const ContracT = await hre.ethers.getContractFactory(nameContract, factoryOptions);
+            let contract;
+            if (upgradable) {
+                // NOTE: upgradeOptions is passed as args or options depending on project usage; keeping existing behavior.
+                contract = await hre.upgrades.deployProxy(ContracT, upgradeOptions);
+            } else {
+                contract = await ContracT.deploy(...deployArgs);
+            }
+            await contract.deployed();
+            if (attempt > 0) {
+                console.log(`[deployerContract] Succeeded deploying ${nameContract} on attempt ${attempt + 1}`);
+            }
+            return contract;
+        } catch (err) {
+            lastError = err;
+            console.warn(`[deployerContract] Attempt ${attempt + 1} to deploy ${nameContract} failed:`, err?.message || err);
+            attempt++;
+            if (attempt > retries) break;
+            if (currentDelay > 0) {
+                console.log(`[deployerContract] Retrying in ${currentDelay} ms (attempt ${attempt + 1} of ${retries + 1})`);
+                await wait(currentDelay);
+                currentDelay = Math.floor(currentDelay * backoffFactor);
+            }
+        }
+    }
+    console.error(`[deployerContract] All ${retries + 1} attempts failed for ${nameContract}`);
+    throw lastError;
 }
 
 

@@ -4,6 +4,7 @@ import { contractAt, deployerContract } from "../../utils/contract-utils";
 import { findEvent } from "../../utils/transaction";
 import * as path from 'path';
 import { getSigner } from "../../utils/simulation-utils";
+import { retryTransaction } from "../../utils/transaction";
 
 subtask("deployTreasuryPool", "Deploy a new Treasury Pool")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
@@ -22,27 +23,16 @@ subtask("deployTreasuryPool", "Deploy a new Treasury Pool")
         const poolMaster = await contractAt(
             hre, outData["poolMaster"]["deployer"]["contract"], 
             outData["poolMaster"]["deployer"]["address"]);
-        console.log("estimate gas")
-        let estimated = await poolMaster.connect(creator)
-            .estimateGas.createPoolMasterTreasuryPool(
-                [inData["addressIds"]["treasuryOwner"]],
-                [100],
-                '{"na":"Dob Main Treasury","ma":0}'
-            )
-        console.log("estimated gas:", estimated.toString())
-        console.log("deploy")
-        let txData = await poolMaster.connect(creator)
+            
+        const {txData, resData} = await retryTransaction(
+            () => poolMaster.connect(creator)
             .functions.createPoolMasterTreasuryPool(
                 [inData["addressIds"]["treasuryOwner"]],
                 [100],
-                '{"na":"Dob Main Treasury","ma":0}',
-                {
-                    gasLimit: estimated.mul(2).toString()
-                }
-            )
-
-        let resData = await txData.wait();
-        console.log("deploy complete")
+                '{"na":"Dob Main Treasury","ma":0}'
+            ),
+            "Create Pool Master Treasury Pool"
+        )
         let event = findEvent(resData, "CreatePool")
 
         outData["treasury"] = {

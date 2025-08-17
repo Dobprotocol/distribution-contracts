@@ -30,7 +30,9 @@ contract DistributionPool is BasePool {
      */
     constructor(
         address _storage
-    ) AccessStorageOwnableInitializable(_storage, "distribution.pool") {}
+    ) AccessStorageOwnableInitializable(_storage, "distribution.pool") {
+    // avoid calling _disableInitializers here due to storage writes requiring roles during construction
+    }
 
     /**
      * 

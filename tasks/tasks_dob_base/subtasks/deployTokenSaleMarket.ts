@@ -3,6 +3,7 @@ import fs from 'fs';
 import { deployerContract, contractAt } from "../../utils/contract-utils";
 import * as path from 'path';
 import { getSigner } from "../../utils/simulation-utils";
+import { retryTransaction } from "../../utils/transaction";
 
 subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
@@ -18,17 +19,11 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
         let outData = JSON.parse(fs.readFileSync(
             path.join(taskArgs.outputConfigFile), 'utf8'));
 
-        let gasLimitMultiplier = 2
-        if ("gasLimitMultiplier" in inData){
-            gasLimitMultiplier = inData["gasLimitMultiplier"]
-        }
-        let gasPrice = inData["regression"]["gasPrice"]
         console.log("deploy tokenSaleMarketLogic")
         let tokenSaleMarketLogic = await deployerContract(
             hre, inData["contracts"]["tokenSaleMarket"], {}, false, {},
             [
                 outData["storage"]["address"],
-                // {gasPrice: gasPrice}
             ],
             creator);
         console.log("tokenSaleMarketLogic.address", tokenSaleMarketLogic.address)
@@ -38,70 +33,38 @@ subtask("deployTokenSaleMarket", "Deploy a new tokenSaleMarket")
             [
                 outData["storage"]["address"],
                 "TSMProxy",
-                // {gasPrice: gasPrice}
             ],
             creator
         )
         console.log("proxy.addres", proxy.address)
-        console.log("done deploys")
-        let txData;
-        let resData;
-        let estimated;
         const storage = await contractAt(
             hre, outData["storage"]["contract"], 
             outData["storage"]["address"]);
+
         console.log("->grant role to logic")
-        estimated = await storage.connect(creator)
-            .estimateGas.grantUserRole(tokenSaleMarketLogic.address);
-        txData = await storage.connect(creator)
-            .functions.grantUserRole(
-                tokenSaleMarketLogic.address, 
-                // {
-                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                //     gasPrice: gasPrice
-                // }
-            );
-        resData = await txData.wait();
+        const grantUserRoleResult = await retryTransaction(
+            () => storage.connect(creator).grantUserRole(tokenSaleMarketLogic.address),
+            "Grant user role to tokenSaleMarketLogic"
+        );
+
         console.log("->grant role to proxy")
-        estimated = await storage.connect(creator)
-            .estimateGas.grantUserRole(proxy.address);
-        txData = await storage.connect(creator)
-            .functions.grantUserRole(
-                proxy.address, 
-                // {
-                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                //     gasPrice: gasPrice
-                // }
-            );
-        resData = await txData.wait();
-        console.log("->initialize proxy")
-        estimated = await proxy.connect(creator)
-            .estimateGas.initLogic(tokenSaleMarketLogic.address);
-        txData = await proxy.connect(creator)
-            .functions.initLogic(
-                tokenSaleMarketLogic.address, 
-                // {
-                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                //     gasPrice: gasPrice
-                // }
-            );
-        resData = await txData.wait();
-        console.log("->attach abi")
-        let tsmProxy = tokenSaleMarketLogic.attach(proxy.address);
-        console.log("->initialize logic through proxy")
-        estimated = await tsmProxy.connect(creator)
-            .estimateGas.initialize(
+        const grantUserRoleResultProxy = await retryTransaction(
+            () => storage.connect(creator).grantUserRole(proxy.address),
+            "Grant user role to proxy"
+        );
+
+        console.log("->atomic initialize proxy + logic via initLogicAndCall")
+        const initData = tokenSaleMarketLogic.interface.encodeFunctionData(
+            "initialize",
+            [
                 inData["addressIds"]["tokenSaleMarketOwner"],
-                inData["commission"]["tokenSaleMarket"])
-        txData = await tsmProxy.connect(creator)
-            .functions.initialize(
-                inData["addressIds"]["tokenSaleMarketOwner"],
-                inData["commission"]["tokenSaleMarket"]),
-                // {
-                //     gasLimit: estimated.mul(gasLimitMultiplier).toString(),
-                //     gasPrice: gasPrice
-                // }
-        resData = await txData.wait();
+                inData["commission"]["tokenSaleMarket"]
+            ]
+        );
+        await retryTransaction(
+            () => proxy.connect(creator).initLogicAndCall(tokenSaleMarketLogic.address, initData),
+            "Initialize proxy + logic via initLogicAndCall"
+        )
 
         outData["tokenSaleMarket"] = {
             "address": proxy.address,
