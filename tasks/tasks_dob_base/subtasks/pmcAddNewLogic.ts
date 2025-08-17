@@ -3,6 +3,7 @@ import fs from 'fs';
 import { contractAt, deployerContract } from "../../utils/contract-utils";
 import * as path from 'path';
 import { getSigner } from "../../utils/simulation-utils";
+import { retryTransaction } from "../../utils/transaction";
 
 subtask("pmcAddNewLogic", "Deploy a new logic for participation pools")
     .addPositionalParam("pmcAddress", "the address of the poolMasterConfig")
@@ -18,13 +19,15 @@ subtask("pmcAddNewLogic", "Deploy a new logic for participation pools")
         const pmc = await contractAt(
             hre, taskArgs.pmcContract, 
             taskArgs.pmcAddress);
-
-        let res = await pmc.connect(owner).addLogic(
-            taskArgs.logicAddress,
-            taskArgs.logicName
-        )
-        let tx = await res.wait()
-        console.log("new logic added, hash:", tx.transactionHash)
+            
+        const { txData, resData } = await retryTransaction(
+            () => pmc.connect(owner).addLogic(
+                taskArgs.logicAddress,
+                taskArgs.logicName
+            ),
+            "Add new logic to PoolMasterConfig"
+        );
+        console.log("new logic added, hash:", resData.transactionHash)
 
         let versionNumber = await pmc.connect(owner)
             .functions.getLatestVersionNumber()
