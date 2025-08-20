@@ -23,6 +23,10 @@
         {
           "contract": "PoolMasterConfig",
           "address": "0xAe481ee203815f0ce2b2b8e47e649625fFc66916"
+        },
+        {
+          "contract": "PoolMasterConfig",
+          "address": "0x0b0fD03457586fcf8aA0c5265dbD689ee35509Ab"
         }
       ]
     },
@@ -36,6 +40,10 @@
         {
           "contract": "PoolMaster",
           "address": "0xDCE0aEa6b2A83e89fA20c19968BbDeF5284cF347"
+        },
+        {
+          "contract": "PoolMaster",
+          "address": "0x3816B29B7Ddd41B3068Ef0c2A89b04858F99Bfaf"
         }
       ]
     },
@@ -53,6 +61,10 @@
     {
       "address": "0xEc727D69675F2D388410482F35272fFcd5a054CB",
       "versionNumber": "5"
+    },
+    {
+      "address": "0xB7C353e78D598Dd8E1cAcdE630b2BBAb004dE639",
+      "versionNumber": "6"
     }
   ],
   "treasury": {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import { deployerContract, contractAt } from "../../utils/contract-utils";
 import * as path from 'path';
 import { getSigner } from "../../utils/simulation-utils";
+import { retryTransaction } from "../../utils/transaction";
 
 subtask("transferOwnership", "transfer ownership of poolmaster and storage")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
@@ -31,22 +32,25 @@ subtask("transferOwnership", "transfer ownership of poolmaster and storage")
             hre, outData["poolMaster"]["deployer"]["contract"],
             outData["poolMaster"]["deployer"]["address"]
         )
-        let txData;
-        let resData;
         console.log("transfer ownership for pmDeployer to", inData["addressIds"]["storageOwner"])
-        txData = await pmdeployer.connect(creator)
-            .transferOwnership(inData["addressIds"]["storageOwner"])
-        resData = await txData.wait()
-
+        await retryTransaction(
+            () => pmdeployer.connect(creator)
+            .transferOwnership(inData["addressIds"]["storageOwner"]),
+            "Transfer ownership for pmDeployer"
+        )
         console.log("transfer ownership for pmConfig to", inData["addressIds"]["storageOwner"])
-        txData = await pmconfig.connect(creator)
-            .transferOwnership(inData["addressIds"]["storageOwner"])
-        resData = await txData.wait()
+        await retryTransaction(
+            () => pmconfig.connect(creator)
+            .transferOwnership(inData["addressIds"]["storageOwner"]),
+            "Transfer ownership for pmConfig"
+        )
         outData["poolMaster"]["owner"] = inData["addressIds"]["storageOwner"]
 
         console.log("transfer ownership for storage to", inData["addressIds"]["storageOwner"])
-        txData = await storage.connect(creator)
-            .setGuardian(inData["addressIds"]["storageOwner"])
-        resData = await txData.wait()
+        await retryTransaction(
+            () => storage.connect(creator)
+            .setGuardian(inData["addressIds"]["storageOwner"]),
+            "Transfer ownership for storage"
+        )
         outData["storage"]["owner"] = inData["addressIds"]["storageOwner"]
     })

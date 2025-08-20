@@ -3,6 +3,7 @@ import fs from 'fs';
 import { contractAt, deployerContract } from "../../utils/contract-utils";
 import * as path from 'path';
 import { getSigner } from "../../utils/simulation-utils";
+import { retryTransaction } from "../../utils/transaction";
 
 subtask("deployLogic", "Deploy a new logic for participation pools")
     .addPositionalParam("outputConfigFile", "the path to the config file where all the address will be stored")
@@ -28,10 +29,12 @@ subtask("deployLogic", "Deploy a new logic for participation pools")
         const poolMaster = await contractAt(
             hre, outData["poolMaster"]["config"]["contract"], 
             outData["poolMaster"]["config"]["address"]);
-
-        let txData = await poolMaster.connect(creator)
-            .functions.addLogic(logic.address, inData["contracts"]["participationPool"])
-        let resData = await txData.wait()
+        
+        await retryTransaction(
+            () => poolMaster.connect(creator)
+            .functions.addLogic(logic.address, inData["contracts"]["participationPool"]),
+            "Add logic to pool master"
+        )
         
         let data = await poolMaster.connect(creator)
             .functions.getLatestVersion()
