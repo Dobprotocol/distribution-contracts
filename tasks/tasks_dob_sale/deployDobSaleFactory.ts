@@ -3,6 +3,7 @@ import fs from 'fs';
 import { deployerContract } from "../utils/contract";
 import { getSigner } from "../utils/account";
 import * as path from 'path';
+import { retryTransaction } from "../utils/transaction";
 
 task("deployDobSaleFactory", "Deploy DobSaleFactory contract with linked DobSale implementation.")
     .addPositionalParam(
@@ -39,8 +40,10 @@ task("deployDobSaleFactory", "Deploy DobSaleFactory contract with linked DobSale
         );
         // Transfer ownership if owner argument is provided and different from deployer
         if (taskArgs.owner && taskArgs.owner !== "" && taskArgs.owner.toLowerCase() !== signer.address.toLowerCase()) {
-            console.log(`Transferring ownership to ${taskArgs.owner}`);
-            await dobSaleFactory.connect(signer).functions.transferOwnership(taskArgs.owner);
+            await retryTransaction(
+                () => dobSaleFactory.connect(signer).transferOwnership(taskArgs.owner),
+                `Transferring ownership to ${taskArgs.owner}`
+            );
         }
         console.log("deployed contract address is:", dobSaleFactory.address);
         let data = {
