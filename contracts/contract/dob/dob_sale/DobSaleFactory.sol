@@ -6,7 +6,7 @@ import "./DobSale.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract DobSaleFactory is Ownable {
-    uint256 public commissionPercent;
+    uint256 public commissionPercentX1000;
     address public commissionAddress;
     // mapping(bytes32 => address) public dobSales;
 
@@ -14,17 +14,17 @@ contract DobSaleFactory is Ownable {
         address indexed owner,
         address indexed token,
         uint256 price,
-        uint256 commissionPercent,
+        uint256 commissionPercentX1000,
         address commissionAddress
     );
 
-    constructor() {
-        commissionPercent = 5; // 5%
-        commissionAddress = address(0); // to this factory contract
+    constructor(address _commissionAddress, uint256 _commissionPercentX1000) {
+        commissionPercentX1000 = _commissionPercentX1000;
+        commissionAddress = _commissionAddress;
     }
 
-    function setCommissionPercent(uint256 _commissionPercent) public onlyOwner {
-        commissionPercent = _commissionPercent;
+    function setCommissionPercentX1000(uint256 _commissionPercentX1000) public onlyOwner {
+        commissionPercentX1000 = _commissionPercentX1000;
     }
 
     function setCommissionAddress(address _commissionAddress) public onlyOwner {
@@ -47,7 +47,7 @@ contract DobSaleFactory is Ownable {
             _paymentToken,
             _token,
             _price,
-            commissionPercent,
+            commissionPercentX1000,
             commissionAddress
         );
         sale.transferOwnership(msg.sender);
@@ -57,7 +57,7 @@ contract DobSaleFactory is Ownable {
             msg.sender,
             _token,
             _price,
-            commissionPercent,
+            commissionPercentX1000,
             commissionAddress
         );
         return address(sale);

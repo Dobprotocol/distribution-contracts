@@ -28,7 +28,7 @@ contract DobSale is ReentrancyGuard, Ownable {
     uint256 public totalCommission; // total amount of commission
 
     // add commission percent and address
-    uint256 public commissionPercent;
+    uint256 public commissionPercentX1000;
     address public commissionAddress;
 
 
@@ -47,10 +47,10 @@ contract DobSale is ReentrancyGuard, Ownable {
      * @param _paymentToken Address of the payment token, zero for currency (e.g. ETH)
      * @param _token Address of the ERC20 token to sell (must implement decimals()).
      * @param _pricePerToken Wei per 1 full token. (e.g., 1e18 = 1 ETH per token, 1e16 = 0.01 ETH, etc.)
-     * @param _commissionPercent The commission percent (e.g., 5 = 5%)
+     * @param _commissionPercentX1000 The commission percent times 1000 (e.g., 5000 = 5.000%)
      * @param _commissionAddress The address to receive the commission
      */
-    constructor(address _paymentToken, address _token, uint256 _pricePerToken, uint256 _commissionPercent, address _commissionAddress) {
+    constructor(address _paymentToken, address _token, uint256 _pricePerToken, uint256 _commissionPercentX1000, address _commissionAddress) {
         require(_token != address(0), "Token address cannot be zero");
         require(_pricePerToken > 0, "Price must be > 0");
         // check that if paymentToken is not 0x0, then it must be a valid ERC20 token
@@ -61,8 +61,9 @@ contract DobSale is ReentrancyGuard, Ownable {
         paymentToken = _paymentToken;
         token = ERC20(_token);
         pricePerToken = _pricePerToken;
-        commissionPercent = _commissionPercent;
         commissionAddress = _commissionAddress;
+        // set commission percent to 0 if commission address is 0x0
+        commissionPercentX1000 = _commissionAddress != address(0) ? _commissionPercentX1000 : 0;
 
         // Read decimals from the token itself
         tokenDecimals = token.decimals();
@@ -81,7 +82,7 @@ contract DobSale is ReentrancyGuard, Ownable {
         uint256 cost = pricePerToken * tokenAmount / (10 ** tokenDecimals);
 
         // calculate the commission and the profit for the owner
-        uint256 commission = cost * commissionPercent / 100;
+        uint256 commission = cost * commissionPercentX1000 / (100 * 1000);
         uint256 profit = cost - commission;
 
         // try to transfer the tokens
@@ -116,7 +117,9 @@ contract DobSale is ReentrancyGuard, Ownable {
         require(msg.value >= cost, "Not enough currency sent");
 
         // send the commission to the commission address
-        payable(commissionAddress).transfer(commission);
+        if (commission > 0) {
+            payable(commissionAddress).transfer(commission);
+        }
         // send the profit to the owner
         payable(owner()).transfer(profit);
 
@@ -133,7 +136,9 @@ contract DobSale is ReentrancyGuard, Ownable {
         require(_paymentToken.allowance(msg.sender, address(this)) >= cost, "Not enough allowance");
 
         // send the commission to the commission address
-        _paymentToken.transferFrom(msg.sender, commissionAddress, commission);
+        if (commission > 0) {
+            _paymentToken.transferFrom(msg.sender, commissionAddress, commission);
+        }
         // send the profit to the owner
         _paymentToken.transferFrom(msg.sender, owner(), profit);
 
