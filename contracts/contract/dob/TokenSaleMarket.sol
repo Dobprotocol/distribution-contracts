@@ -18,7 +18,7 @@ import "../remote/RemoteOwnable.sol";
 // import types
 import "../../types/KeyPrefix.sol";
 import "../../types/PoolType.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 // struct TokenSale {
 //     uint256 token_price;
@@ -196,10 +196,6 @@ contract TokenSaleMarket is
         address seller,
         address tokenAddress
     ) public payable virtual override onlyProxy {
-        console.log("ntokenToBuy", nTokenToBuy);
-        console.log("seller", seller);
-        console.log("tokenAddress", tokenAddress);
-        console.log("check require  SALE_IS_LOCKED");
         require(
             !_S.getBool(
                 _paaKey(KeyPrefix.tsmLockedSale, seller, tokenAddress)

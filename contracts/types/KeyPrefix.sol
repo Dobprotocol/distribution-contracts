@@ -41,5 +41,6 @@ enum KeyPrefix {
     gasPrice,
     pmConfig,
     goalAmount,
-    poolType
+    poolType,
+    sharesLimit
 }

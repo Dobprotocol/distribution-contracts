@@ -34,6 +34,18 @@ export async function deployExternalToken(
     return extToken
 }
 
+export async function deployLockedStaking(
+    owner: Signer, stakingTokenAddress: string, rewardTokenAddress: string
+) : Promise<Contract>{
+    const ArrayBytes32 = await ethers.getContractFactory("ArrayBytes32");
+    const libraryArray = await ArrayBytes32.connect(owner).deploy();
+    const LockedStaking= await ethers.getContractFactory("LockedStaking", {libraries: {ArrayBytes32: libraryArray.address}});
+    const staking = await LockedStaking.connect(owner).deploy(
+        stakingTokenAddress, rewardTokenAddress
+    )
+    return staking
+}
+
 export async function deployPoolMaster(creator: Signer, _storage: Contract): Promise<[Contract, Contract]>{
     const PoolMasterConfig = await ethers.getContractFactory("PoolMasterConfig");
     const PoolMaster = await ethers.getContractFactory("PoolMaster");
@@ -93,7 +105,7 @@ export async function deployTreasuryPool(
 ) : Promise<Contract>{
 
     let txData = await _pm.connect(creator)
-        .functions.createPoolMasterTreasuryPool([poolOwner.address], [100], '{"name": "DobTreasury"}');
+        .functions.createPoolMasterTreasuryPool([poolOwner.address], [299], '{"name": "DobTreasury"}');
     
     let txRes = await txData.wait()
     // get deployed pool address and logic version user

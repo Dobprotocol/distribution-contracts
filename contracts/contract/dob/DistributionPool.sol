@@ -11,7 +11,7 @@ import "../../types/DataType.sol";
 import "../../types/KeyPrefix.sol";
 import "../../types/PoolType.sol";
 import "./BasePool.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 
 /**
@@ -30,7 +30,9 @@ contract DistributionPool is BasePool {
      */
     constructor(
         address _storage
-    ) AccessStorageOwnableInitializable(_storage, "distribution.pool") {}
+    ) AccessStorageOwnableInitializable(_storage, "distribution.pool") {
+    // avoid calling _disableInitializers here due to storage writes requiring roles during construction
+    }
 
     /**
      * 

@@ -1,23 +1,61 @@
 import { HardhatUserConfig } from "hardhat/config";
-// import "@nomicfoundation/hardhat-toolbox";
-// import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-verify";
+
+// TODO: the modules hardhat-toolbox and hardhat-upgrades have collision with hardhat-verify
+// so depending on the use case you plan you must enable one or another
+// 
+// if you want to run tests and develop code, then use hardhat-toolbox and upgrades
+import "@nomicfoundation/hardhat-toolbox";
+import '@openzeppelin/hardhat-upgrades';
+// if you want to verify a deploy, then disable the other 2 modules and use hardhat-verify
+// import "@nomicfoundation/hardhat-verify";
+//
 
 
-import "./tasks/deploydobBase"
-import "./tasks/deployNewLogic"
-import "./tasks/upgradePool"
-import "./tasks/upgradePoolMaster"
-import "./tasks/deploydobToken"
-import "./tasks/upgradeTokenSaleMarket"
-import "./tasks/deployPools"
-import "./tasks/estimateGasDeployDobBase"
-import "./tasks/getInfo"
-import "./tasks/tsmSetSale"
-import "./tasks/deployParticipationToken"
-import "./tasks/tsmBuyToken"
+// import dob_base tasks
+import "./tasks/tasks_dob_base/deploy/deployDobBase"
+import "./tasks/tasks_dob_base/deploy/deployNewLogic"
+import "./tasks/tasks_dob_base/deploy/deployNewPoolVersion"
+import "./tasks/tasks_dob_base/deploy/deployPool"
+import "./tasks/tasks_dob_base/deploy/deployTreasuryDistributionPool"
+import "./tasks/tasks_dob_base/estimate/estimateGasDeployDobBase"
+import "./tasks/tasks_dob_base/get/getPoolInfo"
+import "./tasks/tasks_dob_base/get/getProxyImplementation"
+import "./tasks/tasks_dob_base/get/getPoolMasterConfigInfo"
+import "./tasks/tasks_dob_base/upgrade/upgradePool"
+import "./tasks/tasks_dob_base/upgrade/upgradePoolMaster"
+import "./tasks/tasks_dob_base/upgrade/upgradeTokenSaleMarket"
+import "./tasks/tasks_dob_base/set/setSharesLimit"
+
+// import tsm_tasks
+import "./tasks/tasks_tsm/tsmBuyToken"
+import "./tasks/tasks_tsm/tsmSetSale"
+
+// import erc20 tasks
+import "./tasks/tasks_erc20/deployERC20"
+import "./tasks/tasks_erc20/transferToken"
+
+// import currency tasks
+import "./tasks/tasks_currency/transfer"
+
+// staking tasks
+import "./tasks/tasks_staking/deployStaking"
+import "./tasks/tasks_staking/depositRewardStaking"
+import "./tasks/tasks_staking/configureStaking"
+import "./tasks/tasks_staking/transferOwnershipStaking"
+
+// simple staking tasks
+import "./tasks/tasks_simple_staking/deployStaking"
+import "./tasks/tasks_simple_staking/depositRewardStaking"
+import "./tasks/tasks_simple_staking/configureStaking"
+import "./tasks/tasks_simple_staking/transferOwnershipStaking"
+
+// erc20 tasks
+import "./tasks/erc20/deployToken"
+
+// DobSale tasks
+import "./tasks/tasks_dob_sale/deployDobSale"
 
 
 require('hardhat-contract-sizer');
@@ -89,11 +127,17 @@ module.exports = {
       url: "https://mainnet.base.org/",
       accounts:
       process.env.ACCOUNT_BASE?.split(",")
+    },
+    basesepolia: {
+      url: process.env.BASE_SEPOLIA_URL ||"https://base-sepolia.drpc.org",
+      accounts:
+      process.env.ACCOUNT_BASE_SEPOLIA?.split(",")
     }
   },
   etherscan: {
     apiKey: {
-      base: process.env.BASE_API_KEY
+      base: process.env.BASE_API_KEY,
+      baseSepolia: process.env.BASE_API_KEY
     }
   },
   sourcify: {

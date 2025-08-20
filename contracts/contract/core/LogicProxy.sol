@@ -14,17 +14,29 @@ import "./LogicUpgrade.sol";
 contract LogicProxy is LogicProxyInterface, Proxy, AccessStorageOwnableInitializable, LogicUpgrade {
 
 
+    // namespaced storage keys for init protection
+    function _initDeployerKey() internal view returns (bytes32) { return _sKey("proxy.init.deployer"); }
+    function _initDoneKey() internal view returns (bytes32) { return _sKey("proxy.init.done"); }
+
+    modifier notInitializedYet() {
+        require(!_S.getBool(_initDoneKey()), "PROXY_ALREADY_INITIALIZED");
+        _;
+    }
+
     constructor (address _storage, string memory _name) AccessStorageOwnableInitializable(_storage, _name){
+        // no storage writes in constructor to avoid role requirements
     }
 
-    function initLogic(address _logic) external override canInteract {
-        // __ownable_init();
-        _upgradeToAndCall(_logic, new bytes(0), false);
+    function initLogic(address _logic) external override canInteract notInitializedYet {
+        // enforce UUPS compliant target and upgrade without data
+        _upgradeToAndCallUUPS(_logic, new bytes(0), false);
+        _S.setBool(_initDoneKey(), true);
     }
 
-    function initLogicAndCall(address _logic, bytes memory _data) external override canInteract {
-        // __ownable_init();
-        _upgradeToAndCall(_logic, _data, false);
+    function initLogicAndCall(address _logic, bytes memory _data) external override canInteract notInitializedYet {
+        // enforce UUPS compliant target and upgrade with data
+        _upgradeToAndCallUUPS(_logic, _data, true);
+        _S.setBool(_initDoneKey(), true);
     }
 
     function isOwner(address _user) external view override returns(bool) {

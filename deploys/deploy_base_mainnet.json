@@ -1,0 +1,51 @@
+{
+  "network": "base",
+  "storage": {
+    "address": "0xC4c2922337E9BFe8ca12B35950E9Fa90030A4d87",
+    "contract": "EternalStorage",
+    "owner": "0xAa4D2D2439aC7e15574cc8F964B1491cAc6A0b46"
+  },
+  "poolMaster": {
+    "config": {
+      "address": "0xAc017861fe1F4586670213F4fB0ba642d4BF9Bc7",
+      "contract": "PoolMasterConfig",
+      "operational": "0x326C2610E0a97cB5e24a42059e2A2A0E41738b78",
+      "regression": {
+        "coef": 34813,
+        "intercept": 3217412,
+        "gasPrice": "100000000000"
+      },
+      "commission": 300
+    },
+    "deployer": {
+      "address": "0xf4D0C77f7F10925aFA448a5833A6200233bB3910",
+      "contract": "PoolMaster"
+    },
+    "owner": "0x6169C8D8070733B3866737089f891Aa0E9e608b0"
+  },
+  "poolLogic": [
+    {
+      "address": "0xdC50db944764c6bd9d8fB517aC5FE5523B667459",
+      "versionNumber": "1"
+    }
+  ],
+  "treasury": {
+    "address": "0x4DA3147C2d8379f6563038416CdcB801117DBE0E",
+    "ParticipationToken": {
+      "address": "0x7D723092587cD4eD77797045A2DDe0Ffa66804e6",
+      "name": "DobToken"
+    },
+    "owner": "0xB23d7b543f814a6E12B4cFc6b221a6826B058dBE",
+    "logicVersion": "1"
+  },
+  "tokenSaleMarket": {
+    "address": "0x7F402BF0175bEf0fDA16E944E83Ba08000CD8994",
+    "contract": "LogicProxy",
+    "owner": "0x2de047cA4211b28AE2484BC1b9741044C2028261",
+    "logic": {
+      "address": "0x3b1BEA3cA178653422f67d15E8faf823aec1F8cE",
+      "contract": "TokenSaleMarket"
+    },
+    "commission": 0
+  }
+}

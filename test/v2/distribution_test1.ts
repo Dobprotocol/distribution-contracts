@@ -29,7 +29,7 @@ describe("test distribution dates when doing pool distributions", function () {
         operational = accounts[1];
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address, accounts[4].address];
-        poolShares = [860, 594, 546];
+        poolShares = [86, 59, 54];
         distributionInterval = 20000;
         firstDistributionDate = Math.floor(Date.now() / 1000) - distributionInterval * 5 - 567;
 

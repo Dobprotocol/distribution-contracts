@@ -43,7 +43,7 @@ describe("test functionality of different pool types", function(){
         operational = accounts[1];
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address, accounts[4].address];
-        poolShares = [860, 594, 546];
+        poolShares = [86, 59, 54];
         distributionInterval = 20000;
         firstDistributionDate = Math.floor(Date.now() / 1000) - distributionInterval * 5 - 567;
 
@@ -120,7 +120,7 @@ describe("test functionality of different pool types", function(){
             expect(assignedDist.toString()).to.equal(expectedDistribution[i].toString());
         }
 
-        // try to transfer 100 wei to account 11 should work
+        // try to transfer 10 wei (token) to account 11 should work
         let participationTokenAddress = await pool.getParticipationToken();
         console.log("participationToken", participationTokenAddress);
         let participationToken = await ethers.getContractAt(
@@ -129,10 +129,10 @@ describe("test functionality of different pool types", function(){
             (await participationToken.balanceOf(accounts[11].address)).toString()
         ).to.equal("0")
         await participationToken.connect(poolOwner)
-                .transfer(accounts[11].address, "100") 
+                .transfer(accounts[11].address, "10") 
         expect(
             (await participationToken.balanceOf(accounts[11].address)).toString()
-        ).to.equal("100")
+        ).to.equal("10")
     })
     it("create a reward pool with a fixed distribution goal", async function (){
         let goal: string = ethers.utils.parseUnits("5", "ether").toString()
@@ -182,7 +182,7 @@ describe("test functionality of different pool types", function(){
             expect(assignedDist.toString()).to.equal(expectedDistribution[i].toString());
         }
 
-        // try to transfer 100 wei to account 11 should work
+        // try to transfer 10 wei (token) to account 11 should work
         let participationTokenAddress = await pool.getParticipationToken();
         console.log("participationToken", participationTokenAddress);
         let participationToken = await ethers.getContractAt(
@@ -191,10 +191,10 @@ describe("test functionality of different pool types", function(){
             (await participationToken.balanceOf(accounts[11].address)).toString()
         ).to.equal("0")
         await participationToken.connect(poolOwner)
-                .transfer(accounts[11].address, "100") 
+                .transfer(accounts[11].address, "10") 
         expect(
             (await participationToken.balanceOf(accounts[11].address)).toString()
-        ).to.equal("100")
+        ).to.equal("10")
         
     })
     it("payroll pool, distribute from participating user", async function(){
@@ -380,7 +380,7 @@ describe("test functionality of different pool types", function(){
         }
 
         // check that tokens can be transferred
-        // try to transfer 100 wei to account 11 should work
+        // try to transfer 10 wei (token) to account 11 should work
         let participationTokenAddress = await pool.getParticipationToken();
         console.log("participationToken", participationTokenAddress);
         let participationToken = await ethers.getContractAt(
@@ -389,10 +389,10 @@ describe("test functionality of different pool types", function(){
             (await participationToken.balanceOf(accounts[11].address)).toString()
         ).to.equal("0")
         await participationToken.connect(poolOwner)
-                .transfer(accounts[11].address, "100") 
+                .transfer(accounts[11].address, "10") 
         expect(
             (await participationToken.balanceOf(accounts[11].address)).toString()
-        ).to.equal("100")
+        ).to.equal("10")
 
     })
 })

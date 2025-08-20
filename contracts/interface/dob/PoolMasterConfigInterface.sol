@@ -3,10 +3,12 @@ pragma solidity >=0.8.0 <0.9.0;
 
 interface PoolMasterConfigInterface{
     // getters
+    function getSharesLimit() external view returns (uint256);
     function getOperationalAddress() external view returns (address);
     function getRegressionParams() external view returns (uint256 coef, uint256 intercept, uint256 gasPrice);
     function getCommission() external view returns (uint256);
     // setters
+    function setSharesLimit(uint256 _sharesLimit) external;
     function setOperationalAddress(address _newOperational) external;
     function setRegressionParams(uint256 _newCoef, uint256 _newIntercept, uint256 _newGasPrice) external;
     function setCommission(uint256 _commission) external;

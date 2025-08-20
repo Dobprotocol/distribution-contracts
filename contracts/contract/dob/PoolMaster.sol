@@ -24,8 +24,8 @@ import "../core/LogicProxiable.sol";
 
 // libs
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import "hardhat/console.sol";
 
 contract PoolMaster is
     AccessStorageOwnableInitializable,
@@ -56,7 +56,9 @@ contract PoolMaster is
 
     constructor(
         address _storage
-    ) AccessStorageOwnableInitializable(_storage, "pool.master") {}
+    ) AccessStorageOwnableInitializable(_storage, "pool.master") {
+    // do not disable initializers at implementation constructor time due to storage access role guards
+    }
 
     /**************************** */
     /**************************** */
@@ -115,16 +117,17 @@ contract PoolMaster is
             "Dob Participation Token",
             "PPT"
         );
+        uint256 _sharesLimit = PoolMasterConfigInterface(getPoolMasterConfig())
+            .getSharesLimit();
 
         uint256 _totalShare = 0;
         for (uint256 i = 0; i < shares.length; i++) {
             _totalShare = _totalShare.add(shares[i]);
         }
         require(
-            _totalShare < 100000,
-            "total shares cannot be higher than 100000"
+            _totalShare < _sharesLimit,
+            "total shares cannot be higher than limit"
         );
-        _totalShare = _totalShare.mul(1000000000000000000);
 
         token.mint_participants(
             _totalShare, 
@@ -218,6 +221,19 @@ contract PoolMaster is
         return poolAddress;
     }
 
+    function _checkParticipationToken(address token) internal view returns (bool) {
+        ERC20 t = ERC20(token);
+        uint256 _sharesLimit = PoolMasterConfigInterface(getPoolMasterConfig())
+            .getSharesLimit();
+        require(
+            t.totalSupply() <= _sharesLimit, 
+            "INVALID_PARTICIPATION_TOKEN");
+        require(
+            t.decimals() == 0, 
+            "INVALID_PARTICIPATION_TOKEN");
+        return true;
+    }
+
     /**************************** */
     /**************************** */
     // getters
@@ -293,6 +309,10 @@ contract PoolMaster is
             participationToken = createParticipationToken(
                 users, shares, false
             );
+        } else {
+            // existent participation token must have no more than 'shareLimit' total supply 
+            // and 0 decimals
+            _checkParticipationToken(participationToken);
         }
         _creatGeneralParticipationPool(
             users[0],
@@ -418,6 +438,10 @@ contract PoolMaster is
             participationToken = createParticipationToken(
                 users, shares, false
             );
+        } else {
+            // existent participation token must have no more than 'shareLimit' total supply 
+            // and 0 decimals
+            _checkParticipationToken(participationToken);
         }
         _creatGeneralParticipationPool(
             users[0],

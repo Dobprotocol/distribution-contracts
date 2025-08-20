@@ -1,0 +1,13 @@
+{
+    "token": "0xc2cda0C615Ac5aA8Cf2Af9B87c3C3c0ec5FefE4b",
+    "owner": "0x28f6273a228480E1e5e59aBC5d7Ecfb327A15927",
+    "deployerId": 0,
+    "initialBalance": "10000000000000000000000",
+    "initialConfig": {
+        "dprOver10kk": "2740",
+        "tokensForRewards": "10000000000000000000",
+        "lockPeriodDuration": 691200,
+        "depositPeriodDuration": 432000,
+        "startDate": 1721252913
+    }
+}

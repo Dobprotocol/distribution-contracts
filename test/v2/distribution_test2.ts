@@ -59,7 +59,7 @@ describe("test distribution amounts when doing pool distributions", function () 
     it ("test currency distribution to 2 users", async function () {
         poolOwner = accounts[2];
         poolUsers = [accounts[2].address, accounts[3].address];
-        poolShares = [860, 140];
+        poolShares = [86, 14];
 
         pool = await deployParticipationPool(
             _pm, _pmc, poolOwner, poolUsers, poolShares, firstDistributionDate, 999,
@@ -93,7 +93,7 @@ describe("test distribution amounts when doing pool distributions", function () 
         for (let i = 2; i < 2 + 5; i++){
             poolUsers.push(accounts[i].address);
         }
-        poolShares = [860, 140, 560, 435, 5];
+        poolShares = [86, 14, 56, 43, 1];
         let extToken = await deployExternalToken(
             accounts[11], "testToken", "TTD", ethers.utils.parseEther("10").toString())
 

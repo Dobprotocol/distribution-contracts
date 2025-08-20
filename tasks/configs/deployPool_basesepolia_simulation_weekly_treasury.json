@@ -1,0 +1,18 @@
+{
+    "name": "Simulation Weekly",
+    "type": "treasury",
+    "manual_distribution": false,
+    "time_config": {
+        "first_distribution_date": 1744919401,
+        "n_distributions": 10,
+        "interval": 604800
+    },
+    "users": [
+        "0x01D349d390aD51e63dBc9047c43bDfb5046ac6E7",
+        "0x02698d9F62f4824C6020007C4f4ba38874dD160c",
+        "0x98B96646909990A107e155dcdB023945C40eeC4B"
+    ],
+    "shares": [50, 37, 49],
+    "distribution_tokens": [],
+    "owner": "0x01D349d390aD51e63dBc9047c43bDfb5046ac6E7"
+}
