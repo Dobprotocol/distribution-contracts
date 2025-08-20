@@ -85,5 +85,14 @@
       "contract": "TokenSaleMarket"
     },
     "commission": 0
+  },
+  "DobSaleFactory": {
+    "address": "0x6943D3B36eb1942a1358A0909d0f12CeB140d03C",
+    "contract": "DobSaleFactory",
+    "owner": "0x5736E3A05b34214c4757fB331682e95fF67cCd5d",
+    "commission": {
+      "percent": 1500,
+      "address": "0x0000000000000000000000000000000000000000"
+    }
   }
 }
