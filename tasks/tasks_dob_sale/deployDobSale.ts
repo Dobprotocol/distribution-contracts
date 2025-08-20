@@ -13,7 +13,7 @@ task("deployDobSale", "task to deploy the smart contract DobSale.")
     .addOptionalParam("outputFile", "Path to the output config file. By default uses tasks/outputs/deployDobSale/output_<datetime>.json", "")
     .setAction(async (taskArgs, hre) => {
         const now = new Date();
-        const defaultOutputFolder = path.join(path.dirname(path.dirname(__dirname)), "outputs", "deployDobSale")
+        const defaultOutputFolder = path.join(path.dirname(__dirname), "outputs", "deployDobSale")
         // check output file
         let outputFile;
         if (taskArgs.outputFile === ""){
@@ -55,6 +55,7 @@ task("deployDobSale", "task to deploy the smart contract DobSale.")
             }
         }
         console.log("writing data", data)
+        console.log("writing to file", outputFile)
         fs.writeFileSync(outputFile, JSON.stringify(data, null, 2))
         
     })
