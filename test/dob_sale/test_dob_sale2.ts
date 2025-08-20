@@ -34,7 +34,7 @@ describe("DobSale ERC20 payment and extra border cases", function () {
       otherToken.address,
       dobToken.address,
       INITIAL_PRICE,
-      5,
+      5 * 1000,
       commissionAddress.address
     );
     await saleContract.deployed();
@@ -272,7 +272,7 @@ describe("DobSale ERC20 payment and extra border cases", function () {
         other2.address,  // use a wallet address instead of an ERC20 address
         dobToken.address,
         INITIAL_PRICE,
-        5,
+        5 * 1000,
         commissionAddress.address
         )
     ).to.be.revertedWith("paymentToken address must be 0x0 or a valid contract")

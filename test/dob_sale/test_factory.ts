@@ -13,7 +13,7 @@ let DobToken, dobToken, OtherToken, otherToken;
 
     // Deploy the sale factory contract
     DobSaleFactory = await ethers.getContractFactory("DobSaleFactory");
-    factoryContract = await DobSaleFactory.connect(owner).deploy();
+    factoryContract = await DobSaleFactory.connect(owner).deploy(owner.address, 5 * 1000);
     await factoryContract.deployed();
 
     // Deploy the mock token
@@ -36,12 +36,12 @@ let DobToken, dobToken, OtherToken, otherToken;
     expect(await factoryContract.owner()).to.equal(owner.address);
 
     // Check the commission percent
-    expect(await factoryContract.commissionPercent()).to.equal(5);
+    expect(await factoryContract.commissionPercentX1000()).to.equal(5 * 1000);
   });
 
   it("Should allow setting the commission percent", async () => {
-    await factoryContract.connect(owner).setCommissionPercent(10);
-    expect(await factoryContract.commissionPercent()).to.equal(10);
+    await factoryContract.connect(owner).setCommissionPercentX1000(10 * 1000);
+    expect(await factoryContract.commissionPercentX1000()).to.equal(10 * 1000);
   });
 
   it("Should allow setting the commission address", async () => {
@@ -70,6 +70,7 @@ let DobToken, dobToken, OtherToken, otherToken;
     expect(await dobToken.allowance(owner.address, saleContract.address)).to.equal(ethers.utils.parseEther("10000"));
 
     // buy some
+    console.log("buy some")
     await saleContract.connect(buyer).buyToken(ethers.utils.parseEther("1"), {value: ethers.utils.parseEther("0.01")});
   });
 });

@@ -31,10 +31,10 @@ describe("DobSale", function () {
     console.log("deploying sale contract")
     DobSale = await ethers.getContractFactory("DobSale");
     saleContract = await DobSale.connect(owner).deploy(
-      ethers.constants.AddressZero,
+      ethers.constants.AddressZero, // this enables sale with currency
       dobToken.address,
       INITIAL_PRICE,
-      5,
+      5 * 1000,
       commissionAddress.address
     );
     await saleContract.deployed();
@@ -221,6 +221,32 @@ describe("DobSale", function () {
     await expect(
       saleContract.connect(other).transferOwnership(buyer.address)
     ).to.be.revertedWith("Ownable: caller is not the owner")
+  });
+
+  it("Should not apply commission on sales if commission address is 0x0", async () => {
+
+    let saleNoCommissionContract = await DobSale.connect(owner).deploy(
+      ethers.constants.AddressZero, // this enables sale with currency
+      dobToken.address,
+      INITIAL_PRICE,
+      5 * 1000,
+      ethers.constants.AddressZero
+    );
+    await saleNoCommissionContract.deployed();
+
+    // do allowance for sale
+    await dobToken.connect(owner).approve(saleNoCommissionContract.address, ethers.utils.parseEther("10000"));
+
+    // balance before
+    const balanceBefore = await ethers.provider.getBalance(owner.address);
+    const tokensToBuy = ethers.utils.parseEther("2000");
+    const tx = await saleNoCommissionContract.connect(other).buyToken(tokensToBuy, { value: ethers.utils.parseEther("1000") });
+    const receipt = await tx.wait();
+    const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+    
+    const expectedProfit = tokensToBuy.mul(INITIAL_PRICE).div(ethers.utils.parseEther("1"))
+    const balanceAfter = await ethers.provider.getBalance(owner.address)
+    expect(balanceAfter).to.equal(balanceBefore.add(expectedProfit));
   });
 
   it("should allow complex interactions", async () => {
