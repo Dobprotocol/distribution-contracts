@@ -56,6 +56,7 @@ import "./tasks/erc20/deployToken"
 
 // DobSale tasks
 import "./tasks/tasks_dob_sale/deployDobSale"
+import "./tasks/tasks_dob_sale/deployDobSaleFactory"
 
 
 require('hardhat-contract-sizer');
