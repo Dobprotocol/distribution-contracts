@@ -27,6 +27,12 @@ import "./tasks/tasks_dob_base/upgrade/upgradePool"
 import "./tasks/tasks_dob_base/upgrade/upgradePoolMaster"
 import "./tasks/tasks_dob_base/upgrade/upgradeTokenSaleMarket"
 import "./tasks/tasks_dob_base/set/setSharesLimit"
+// DistributionPoolV2 (lazy pull-based distribution) tasks
+import "./tasks/tasks_dob_base/deploy/deployPoolV2Version"
+import "./tasks/tasks_dob_base/dist/createDistribution"
+import "./tasks/tasks_dob_base/dist/claim"
+import "./tasks/tasks_dob_base/set/setDistributionConfig"
+import "./tasks/tasks_dob_base/set/setDistributionCommission"
 
 // import tsm_tasks
 import "./tasks/tasks_tsm/tsmBuyToken"
@@ -133,12 +139,36 @@ module.exports = {
       url: process.env.BASE_SEPOLIA_URL ||"https://base-sepolia.drpc.org",
       accounts:
       process.env.ACCOUNT_BASE_SEPOLIA?.split(",")
+    },
+    arbitrum: {
+      url: process.env.ARBITRUM_URL || "https://arbitrum-one-rpc.publicnode.com",
+      accounts:
+      process.env.ACCOUNT_ARBITRUM?.split(",")
+    },
+    arbitrumsepolia: {
+      url: process.env.ARBITRUM_SEPOLIA_URL || "https://sepolia-rollup.arbitrum.io/rpc",
+      accounts:
+      process.env.ACCOUNT_ARBITRUM_SEPOLIA?.split(",")
+    },
+    lisk: {
+      url: process.env.LISK_URL || "https://rpc.api.lisk.com",
+      accounts:
+      process.env.ACCOUNT_LISK?.split(","),
+      gasPrice: 2000000
+    },
+    robinhoodtestnet: {
+      url: process.env.ROBINHOOD_TESTNET_URL || "https://rpc.testnet.chain.robinhood.com",
+      accounts:
+      process.env.ACCOUNT_ROBINHOOD_TESTNET?.split(",")
     }
   },
   etherscan: {
     apiKey: {
       base: process.env.BASE_API_KEY,
-      baseSepolia: process.env.BASE_API_KEY
+      baseSepolia: process.env.BASE_API_KEY,
+      arbitrumOne: process.env.ARBISCAN_API_KEY,
+      arbitrumSepolia: process.env.ARBISCAN_API_KEY,
+      lisk: process.env.LISK_API_KEY
     }
   },
   sourcify: {
