@@ -31,7 +31,7 @@ task("tsmBuyToken", "tsmBuyToken")
         console.log("::::::::::::::::::::::::::::::::::")
 
         console.log("1. calling TSM.buyToken()")
-        // npx hardhat --network base tsmBuyToken 0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD 399bfe162112819a61079936b7a4908d05f68c748244058ebc189bed16a9611b 0x2de047cA4211b28AE2484BC1b9741044C2028261 1 0.0025
+        // npx hardhat --network base tsmBuyToken 0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD <PRIVATE_KEY_PLACEHOLDER_ROTATE_AND_USE_ENV> 0x2de047cA4211b28AE2484BC1b9741044C2028261 1 0.0025
         let tx = await tsm.connect(signer).functions.buyToken(
             amount.toString(),
             seller,
