@@ -30,8 +30,8 @@ task("tsmSetSale", "tsmSetSale")
         console.log("::::::::::::::::::::::::::::::::::")
 
         console.log("1. calling TSM.setSaleProperties()")
-        // npx hardhat --network base tsmSetSale 0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD 399bfe162112819a61079936b7a4908d05f68c748244058ebc189bed16a9611b 0x0 1 0.0025
-        // npx hardhat --network alfajores tsmSetSale 0x29076a1b1Dc5d842152D74569a8d02CBb01170E3 399bfe162112819a61079936b7a4908d05f68c748244058ebc189bed16a9611b 0x4cc588E5b80D55440C1e5f8A4d85d6CFd568997E 1 0.0025
+        // npx hardhat --network base tsmSetSale 0x11E7f472537e98aFfFB145dFc47039a6b2aEDCeD <PRIVATE_KEY_PLACEHOLDER_ROTATE_AND_USE_ENV> 0x0 1 0.0025
+        // npx hardhat --network alfajores tsmSetSale 0x29076a1b1Dc5d842152D74569a8d02CBb01170E3 <PRIVATE_KEY_PLACEHOLDER_ROTATE_AND_USE_ENV> 0x4cc588E5b80D55440C1e5f8A4d85d6CFd568997E 1 0.0025
         let tx = await tsm.connect(signer).functions.setSaleProperties(
             token.address,
             price,
