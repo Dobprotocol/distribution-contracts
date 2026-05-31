@@ -69,5 +69,6 @@ enum KeyPrefix {
     schedFirstTime,      // per token: first scheduled distribution timestamp
     schedInterval,       // per token: seconds between scheduled distributions
     schedTotalCount,     // per token: total scheduled distributions (0 = unlimited)
-    schedExecuted        // per token: scheduled distributions already fired
+    schedExecuted,       // per token: scheduled distributions already fired
+    roundSnapshotId      // per (token, roundId): participation-token snapshot id at round creation
 }

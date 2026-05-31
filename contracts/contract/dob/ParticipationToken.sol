@@ -2,13 +2,14 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 // Importing OpenZeppelin's SafeMath Implementation
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "../../interface/dob/ParticipationTokenInterface.sol";
 
-contract ParticipationToken is ERC20Pausable, Initializable, ParticipationTokenInterface {
+contract ParticipationToken is ERC20Pausable, ERC20Snapshot, Initializable, ParticipationTokenInterface {
     using SafeMath for uint256;
 
     bool private _lockToken;
@@ -17,6 +18,28 @@ contract ParticipationToken is ERC20Pausable, Initializable, ParticipationTokenI
         string memory name,
         string memory symbol
     ) ERC20(name, symbol) {
+    }
+
+    /**
+     * Create a balance snapshot and return its id. Used by DistributionPoolV2
+     * to record shareholders' balances at distribution time, so claims are
+     * computed from the snapshot (not the live balance) — preventing
+     * re-claiming a round by transferring shares to fresh addresses.
+     * Permissionless: creating a snapshot is harmless; the caller records the
+     * returned id for its own use.
+     */
+    function snapshot() public returns (uint256) {
+        return _snapshot();
+    }
+
+    // resolve multiple-inheritance of _beforeTokenTransfer
+    // (ERC20Pausable: paused-check; ERC20Snapshot: balance-history update)
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20Pausable, ERC20Snapshot) {
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     function mint_participants(

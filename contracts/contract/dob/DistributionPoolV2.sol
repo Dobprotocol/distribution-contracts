@@ -7,6 +7,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../types/KeyPrefix.sol";
 import "./BasePool.sol";
 
+/// Minimal view of the snapshot-capable participation token (ParticipationToken).
+interface IParticipationSnapshot {
+    function snapshot() external returns (uint256);
+    function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256);
+    function totalSupplyAt(uint256 snapshotId) external view returns (uint256);
+}
+
 /**
  * @title DistributionPoolV2
  * @notice Lazy, pull-based distribution logic — an EVM port of the Stellar
@@ -345,12 +352,21 @@ contract DistributionPoolV2 is BasePool {
             revert NothingToDistribute();
         }
 
-        uint256 supply = IERC20(getParticipationToken()).totalSupply();
+        // snapshot each holder's balance now; claims are computed from this
+        // snapshot (not the live balance), so shares transferred after the
+        // round cannot be used to re-claim it from a fresh address.
+        uint256 snapId = IParticipationSnapshot(getParticipationToken()).snapshot();
+        uint256 supply = IParticipationSnapshot(getParticipationToken()).totalSupplyAt(snapId);
         if (supply == 0) {
             revert NoParticipationSupply();
         }
 
-        uint256 commission = unallocated.mul(_distCommissionBps()).div(10000);
+        // only take commission if a recipient (treasury) is set — otherwise the
+        // transfer to address(0) would revert (ERC20) or burn (native).
+        address treasury = getTreasuryAddress();
+        uint256 commission = treasury == address(0)
+            ? 0
+            : unallocated.mul(_distCommissionBps()).div(10000);
         uint256 totalAmount = unallocated.sub(commission);
         if (totalAmount == 0) {
             revert AmountAfterCommissionZero();
@@ -376,6 +392,7 @@ contract DistributionPoolV2 is BasePool {
 
         _S.setUint256(_rKey(KeyPrefix.roundTotalAmount, _token, roundId), totalAmount);
         _S.setUint256(_rKey(KeyPrefix.roundSupplySnapshot, _token, roundId), supply);
+        _S.setUint256(_rKey(KeyPrefix.roundSnapshotId, _token, roundId), snapId);
         _S.setUint256(_rKey(KeyPrefix.roundCreatedAt, _token, roundId), nowT);
         _S.setUint256(_rKey(KeyPrefix.roundClaimableFrom, _token, roundId), claimableFrom);
         _S.setUint256(_rKey(KeyPrefix.roundExpiresAt, _token, roundId), expiresAt);
@@ -383,7 +400,7 @@ contract DistributionPoolV2 is BasePool {
 
         // pay commission to treasury (state already set: reentrancy-safe)
         if (commission > 0) {
-            _transferOut(_token, getTreasuryAddress(), commission);
+            _transferOut(_token, treasury, commission);
         }
 
         emit DistributionRoundCreated(
@@ -434,7 +451,13 @@ contract DistributionPoolV2 is BasePool {
         if (supply == 0) {
             return 0;
         }
-        uint256 bal = IERC20(getParticipationToken()).balanceOf(_shareholder);
+        // balance AT the round's snapshot — not the live balance — so transfers
+        // after the round cannot enable re-claims from fresh addresses.
+        uint256 snapId = _S.getUint256(
+            _rKey(KeyPrefix.roundSnapshotId, _token, _roundId)
+        );
+        uint256 bal = IParticipationSnapshot(getParticipationToken())
+            .balanceOfAt(_shareholder, snapId);
         uint256 totalAmount = _S.getUint256(
             _rKey(KeyPrefix.roundTotalAmount, _token, _roundId)
         );
@@ -470,6 +493,9 @@ contract DistributionPoolV2 is BasePool {
         address _token,
         uint256 _roundId
     ) internal returns (uint256 amount) {
+        // amount is computed from the round's per-holder snapshot, so the sum
+        // of all holders' claims can never exceed round.totalAmount and a fresh
+        // address (0 balance at snapshot) claims 0 — no over-claim possible.
         amount = _computeClaim(_shareholder, _token, _roundId);
 
         // effects before interaction (reentrancy-safe)
@@ -601,7 +627,7 @@ contract DistributionPoolV2 is BasePool {
         uint256 _claimDelaySeconds,
         uint256 _roundExpirySeconds
     ) external onlyOwner {
-        if (_roundExpirySeconds == 0) {
+        if (_roundExpirySeconds == 0 || _claimDelaySeconds >= _roundExpirySeconds) {
             revert ExpiryMustBePositive();
         }
         _S.setUint256(_pKey(KeyPrefix.minIntervalSeconds), _minIntervalSeconds);
@@ -698,43 +724,19 @@ contract DistributionPoolV2 is BasePool {
             );
     }
 
-    function getDistributionConfigV2()
-        external
-        view
-        returns (
-            uint256 minIntervalSeconds,
-            uint256 claimDelaySeconds,
-            uint256 roundExpirySeconds,
-            uint256 distributionCommissionBps,
-            bool configSet
-        )
-    {
-        minIntervalSeconds = _minInterval();
-        claimDelaySeconds = _claimDelay();
-        roundExpirySeconds = _roundExpiry();
-        distributionCommissionBps = _distCommissionBps();
-        configSet = _distConfigSet();
-    }
-
     //******************************* */
     // interface read stubs (required by DistributionPoolInterface)
 
+    // legacy interface stub — V2 uses round-based distribution, not the V1
+    // schedule fields; returns zeros (use getRound/getRoundCount instead).
     function getDistributionDates(
-        address _token
+        address
     )
         external
-        view
-        returns (
-            uint256 firstDistributionDate,
-            uint256 nDistributions,
-            uint256 distributionInterval,
-            uint256 index
-        )
+        pure
+        returns (uint256, uint256, uint256, uint256)
     {
-        firstDistributionDate = _S.getUint256(_ptKey(KeyPrefix.firstDistributionDate, _token));
-        nDistributions = _S.getUint256(_ptKey(KeyPrefix.nDistributions, _token));
-        distributionInterval = _S.getUint256(_ptKey(KeyPrefix.distributionInterval, _token));
-        index = _S.getUint256(_ptKey(KeyPrefix.index, _token));
+        return (0, 0, 0, 0);
     }
 
     function getDistributionAmounts(
