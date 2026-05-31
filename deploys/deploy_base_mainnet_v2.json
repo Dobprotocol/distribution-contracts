@@ -1,0 +1,11 @@
+{
+  "network": "base-mainnet",
+  "deployer": "0xd874452BdC9922291F40D2A4032Bd6aF5ccE6F5E",
+  "storage": "0x2BDE92fbE1E68703D1F4B344F6d9EC9E36033fAD",
+  "poolMasterConfig": "0x80cc2C488DDB1D6082AEC050b4f634CbB3cAF03e",
+  "poolMaster": "0x240f4b752189a68BD0C2B5B1dF5b29cB58e7CCF6",
+  "distributionPoolV2Logic": "0x9EefBEd958387A6150f0aa462c48f4a092821640",
+  "crowdfundingFactory": "0xa070aA1702F2fD2B9653dEf2886de464142619b5",
+  "logicVersion": "1",
+  "sharesLimit": "1000000"
+}
