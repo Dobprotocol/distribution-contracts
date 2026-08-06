@@ -4,8 +4,19 @@
   "storage": "0x2BDE92fbE1E68703D1F4B344F6d9EC9E36033fAD",
   "poolMasterConfig": "0x80cc2C488DDB1D6082AEC050b4f634CbB3cAF03e",
   "poolMaster": "0x240f4b752189a68BD0C2B5B1dF5b29cB58e7CCF6",
-  "distributionPoolV2Logic": "0x9EefBEd958387A6150f0aa462c48f4a092821640",
-  "crowdfundingFactory": "0xa070aA1702F2fD2B9653dEf2886de464142619b5",
-  "logicVersion": "1",
-  "sharesLimit": "1000000"
+  "distributionPoolV2Logic": "0xE2DE466f55B987Ce6aD1A503b5DA15Ea364cf12B",
+  "crowdfundingFactory": "0x49c44e098ff4A06d2859646d09946E4BD4E8663e",
+  "logicVersion": "2",
+  "sharesLimit": "1000000",
+  "poolMasterLogic": "0x43eF74cDf70a7125886524B5DD4016fDe7bB6a8a",
+  "audit_2026_08": {
+    "date": "2026-08-06",
+    "previous": {
+      "distributionPoolV2Logic": "0x9EefBEd958387A6150f0aa462c48f4a092821640",
+      "poolMasterLogic": "0x9196606DA96fE7882883F6A6d83aE3F6E7b2ff93",
+      "crowdfundingFactory": "0xa070aA1702F2fD2B9653dEf2886de464142619b5",
+      "logicVersion": "1"
+    },
+    "tokenSaleMarket": "NO actualizado: owner 0xe5Ed5d930Bd6D183C9C973aF3D6f81f1700Cf084, fuera de nuestro control"
+  }
 }
