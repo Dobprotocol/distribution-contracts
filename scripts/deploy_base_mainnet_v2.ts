@@ -37,29 +37,46 @@ async function main() {
   console.log("[1] EternalStorage...");
   const storage = await Storage.deploy(); await storage.deployed();
 
-  console.log("[2] PoolMasterConfig + proxy...");
+  // AUDIT 2026-08 (B-7): `initLogic` followed by a separate `initialize` leaves
+  // the proxy live but ownerless for however long the second transaction takes
+  // to land — minutes here, with the 4s sleeps and the retry loop. On a public
+  // chain anyone watching the mempool can call `initialize` first and own the
+  // whole stack. `initLogicAndCall` does both in one transaction, which is the
+  // same thing PoolMaster already does when it deploys a pool.
+  console.log("[2] PoolMasterConfig + proxy (init atomic)...");
   const pmcLogic = await PMC.deploy(storage.address); await pmcLogic.deployed();
   const pmcProxy = await PROXY.deploy(storage.address, "PoolMasterConfig.proxy"); await pmcProxy.deployed();
   await send(storage.functions.grantUserRole(pmcProxy.address));
   await send(storage.functions.grantAdminRole(pmcProxy.address));
-  await send(pmcProxy.functions.initLogic(pmcLogic.address));
+  await send(pmcProxy.functions.initLogicAndCall(
+    pmcLogic.address,
+    PMC.interface.encodeFunctionData("initialize", [1, 1, 1, s.address, 10000])
+  ));
   const pmc = pmcLogic.attach(pmcProxy.address);
 
-  console.log("[3] PoolMaster + proxy...");
+  console.log("[3] PoolMaster + proxy (init atomic)...");
   const pmLogic = await PM.deploy(storage.address); await pmLogic.deployed();
   const pmProxy = await PROXY.deploy(storage.address, "PoolMaster.proxy"); await pmProxy.deployed();
   await send(storage.functions.grantUserRole(pmProxy.address));
   await send(storage.functions.grantAdminRole(pmProxy.address));
-  await send(pmProxy.functions.initLogic(pmLogic.address));
+  await send(pmProxy.functions.initLogicAndCall(
+    pmLogic.address,
+    PM.interface.encodeFunctionData("initialize", [pmc.address])
+  ));
   const pm = pmLogic.attach(pmProxy.address);
 
   console.log("[4] DistributionPoolV2 logic...");
   const v2 = await V2.deploy(storage.address); await v2.deployed();
   await send(storage.functions.grantUserRole(v2.address));
 
-  console.log("[5] init PMC + PM, sharesLimit 1,000,000, register V2, treasury pool...");
-  await retry("pmc.initialize", () => send(pmc.functions.initialize(1, 1, 1, s.address, 10000)));
-  await retry("pm.initialize", () => send(pm.functions.initialize(pmc.address)));
+  console.log("[5] verify ownership, sharesLimit 1,000,000, register V2, treasury pool...");
+  // Both proxies were initialized in the same tx that set their logic; confirm
+  // the deployer really is the owner before doing anything else with them.
+  const pmcOwner = (await pmc.functions.owner())[0];
+  const pmOwner = (await pm.functions.owner())[0];
+  if (pmcOwner !== s.address || pmOwner !== s.address) {
+    throw new Error(`OWNERSHIP MISMATCH — pmc:${pmcOwner} pm:${pmOwner} expected:${s.address}`);
+  }
   await retry("setSharesLimit", () => send(pmc.functions.setSharesLimit(1000000)));
   await retry("addLogicVersion", () => send(pmc.functions.addLogicVersion(v2.address, 1, "DistributionPoolV2")));
   await retry("createTreasuryPool", () => send(pm.functions.createPoolMasterTreasuryPool([s.address], [100], "")));

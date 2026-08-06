@@ -105,6 +105,18 @@ contract PoolMaster is
 
         _proxy.initLogicAndCall(_logic, _data);
 
+        // AUDIT 2026-08 (B-5). `ParticipationToken.snapshot()` is no longer open
+        // to the world, so the pool that is about to call it has to be
+        // authorised here — this is the only moment where both the token and the
+        // freshly created pool address are known. Wrapped in try/catch on
+        // purpose: a pool may be created around a participation token that this
+        // PoolMaster did not deploy (the `_checkParticipationToken` path) or an
+        // older token without this entry point, and neither case may block pool
+        // creation.
+        try
+            ParticipationToken(_addresses[2]).authorizeSnapshotter(address(_proxy))
+        {} catch {}
+
         return address(_proxy);
     }
 

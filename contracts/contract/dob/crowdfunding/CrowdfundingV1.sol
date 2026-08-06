@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "../../../interface/dob/DistributionPoolInterface.sol";
+
 /**
  * @title CrowdfundingV1
  * @notice EVM/Solidity port of the Stellar `crowdfunding_v1` contract.
@@ -12,9 +14,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *         payment token to buy shares (out of 10,000) at a fixed price; funds
  *         are escrowed until the deadline. After the deadline anyone can
  *         `finalize`: if shares sold >= soft cap the campaign Succeeds, else it
- *         Fails. On success the admin `activate`s, moving the escrowed funds to
- *         a pre-deployed DistributionPoolV2 splitter (which then distributes to
- *         contributors via claim). On failure investors `refund`.
+ *         Fails. On success the admin announces the destination splitter with
+ *         `proposeActivation` and, one timelock later, calls `activate` to move
+ *         the escrowed funds to that pre-deployed DistributionPoolV2 (which then
+ *         distributes to contributors via claim). On failure investors `refund`;
+ *         if the admin never activates, `expireActivation` opens refunds too.
  *
  *         Standalone contract (one per campaign), mirroring the Stellar design.
  *         Lifecycle: Fundraising -> Succeeded|Failed -> Activated.
@@ -23,6 +27,14 @@ contract CrowdfundingV1 is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant TOTAL_SHARES = 10_000;
+
+    /// How long an announced activation must sit in public before it can
+    /// execute (AUDIT 2026-08 / N-1).
+    uint256 public constant ACTIVATION_TIMELOCK = 7 days;
+
+    /// How long after the campaign deadline the admin has to activate before
+    /// investors can force refunds open (AUDIT 2026-08 / N-2).
+    uint256 public constant ACTIVATION_DEADLINE = 90 days;
 
     enum Status { Fundraising, Succeeded, Failed, Activated }
 
@@ -37,6 +49,11 @@ contract CrowdfundingV1 is ReentrancyGuard {
     uint256 public totalSharesSold;
     uint256 public totalRaised;
     address public splitter;
+
+    /// Announced-but-not-yet-executed activation target (AUDIT 2026-08 / N-1).
+    address public pendingSplitter;
+    /// Earliest timestamp at which {activate} may run for {pendingSplitter}.
+    uint256 public activationEta;
 
     mapping(address => uint256) public contributions; // investor => shares bought
 
@@ -55,6 +72,15 @@ contract CrowdfundingV1 is ReentrancyGuard {
     error NothingToRefund();
     error OnlyAdmin();
     error ZeroSplitter();
+    // Activation (AUDIT 2026-08 / N-1, N-2)
+    error NoPendingActivation();
+    error ActivationTimelockPending();
+    error SplitterMismatch();
+    error InvalidSplitter();
+    error ActivationWindowExpired();
+    error ActivationWindowStillOpen();
+    error PaymentTokenNotSupported();
+    error NoticePeriodOver();
 
     // ---- events ----
     event CfInit(address indexed admin, address indexed paymentToken, uint256 pricePerShare, uint256 softCapShares, uint256 hardCapShares, uint256 deadline);
@@ -62,6 +88,10 @@ contract CrowdfundingV1 is ReentrancyGuard {
     event CfFinalized(Status status, uint256 totalSharesSold, uint256 totalRaised);
     event CfActivated(address indexed splitter, uint256 totalRaised);
     event CfRefunded(address indexed investor, uint256 shares, uint256 refundAmount);
+    event CfActivationProposed(address indexed splitter, uint256 eta);
+    event CfActivationCancelled(address indexed splitter);
+    event CfActivationExpired(uint256 totalRaised);
+    event CfOptOut(address indexed investor, uint256 shares, uint256 refundAmount);
 
     modifier onlyAdmin() {
         if (msg.sender != admin) revert OnlyAdmin();
@@ -110,7 +140,17 @@ contract CrowdfundingV1 is ReentrancyGuard {
         totalRaised += payment;
 
         // interaction (escrow into this contract)
+        //
+        // AUDIT 2026-08 (N-3). The books credit `sharesAmount * pricePerShare`,
+        // so a fee-on-transfer or rebasing payment token would leave the escrow
+        // structurally short and the last investors to refund unpaid. Rather
+        // than try to account for such tokens, reject them at the first
+        // contribution: measure what actually arrived.
+        uint256 balanceBefore = paymentToken.balanceOf(address(this));
         paymentToken.safeTransferFrom(msg.sender, address(this), payment);
+        if (paymentToken.balanceOf(address(this)) - balanceBefore != payment) {
+            revert PaymentTokenNotSupported();
+        }
 
         emit CfContribute(msg.sender, sharesAmount, payment, totalSharesSold);
     }
@@ -128,20 +168,131 @@ contract CrowdfundingV1 is ReentrancyGuard {
     }
 
     /**
-     * Admin moves the escrowed funds to a pre-deployed splitter (whose shares
-     * must match the contributors). Only when Succeeded.
+     * AUDIT 2026-08 (N-1). Step 1 of activation: the admin announces which
+     * splitter will receive the escrow, and the announcement has to sit in
+     * public for ACTIVATION_TIMELOCK before it can execute.
+     *
+     * Be clear about what this does and does not buy. The campaign keeps no
+     * index of its investors (only a per-address mapping), so it cannot verify
+     * on-chain that the proposed splitter's cap table matches the contributors —
+     * that check is impossible here by construction. What it can do is refuse
+     * addresses that are obviously not a pool, and turn a silent instant
+     * transfer of every investor's money into a publicly announced one with a
+     * week of lead time, so investors can see it and react before it lands.
+     */
+    function proposeActivation(address _splitter) external onlyAdmin returns (uint256 eta) {
+        if (status == Status.Activated) revert AlreadyActivated();
+        if (status != Status.Succeeded) revert NotSucceeded();
+        if (_splitter == address(0)) revert ZeroSplitter();
+        if (
+            _splitter == address(this) ||
+            _splitter == address(paymentToken) ||
+            _splitter == admin
+        ) revert InvalidSplitter();
+
+        // Probe: a distribution pool answers getParticipationToken(). A plain
+        // wallet has no code, and an unrelated contract reverts or returns
+        // garbage the decoder rejects.
+        if (_splitter.code.length == 0) revert InvalidSplitter();
+        try DistributionPoolInterface(_splitter).getParticipationToken() returns (address pt) {
+            if (pt == address(0)) revert InvalidSplitter();
+        } catch {
+            revert InvalidSplitter();
+        }
+
+        eta = block.timestamp + ACTIVATION_TIMELOCK;
+        pendingSplitter = _splitter;
+        activationEta = eta;
+        emit CfActivationProposed(_splitter, eta);
+    }
+
+    /**
+     * Admin withdraws a pending proposal (wrong address, changed plan).
+     */
+    function cancelActivation() external onlyAdmin {
+        if (pendingSplitter == address(0)) revert NoPendingActivation();
+        emit CfActivationCancelled(pendingSplitter);
+        pendingSplitter = address(0);
+        activationEta = 0;
+    }
+
+    /**
+     * Step 2: move the escrowed funds to the splitter announced earlier. Only
+     * when Succeeded, only the exact address that was proposed, only after the
+     * timelock, and only inside the activation window.
      */
     function activate(address _splitter) external onlyAdmin nonReentrant returns (uint256 raised) {
         if (status == Status.Activated) revert AlreadyActivated();
         if (status != Status.Succeeded) revert NotSucceeded();
-        if (_splitter == address(0)) revert ZeroSplitter();
+        if (pendingSplitter == address(0)) revert NoPendingActivation();
+        if (pendingSplitter != _splitter) revert SplitterMismatch();
+        if (block.timestamp < activationEta) revert ActivationTimelockPending();
+        if (block.timestamp >= deadline + ACTIVATION_DEADLINE) revert ActivationWindowExpired();
 
         raised = totalRaised;
         splitter = _splitter;
         status = Status.Activated;
+        pendingSplitter = address(0);
+        activationEta = 0;
 
         paymentToken.safeTransfer(_splitter, raised);
         emit CfActivated(_splitter, raised);
+    }
+
+    /**
+     * AUDIT 2026-08 (N-1, second half). A notice period is only worth something
+     * if investors can act on it. During the timelock — and only then — a
+     * contributor who does not accept the announced destination takes their
+     * money back and leaves the campaign.
+     *
+     * Leaving also withdraws the proposal. The admin sized the splitter's cap
+     * table against the contributor list as it stood when they proposed; if
+     * someone exits, that list is stale, and activating anyway would hand pool
+     * shares to an investor who has already been repaid. So the admin has to
+     * re-propose against the corrected list and serve a fresh notice. Each
+     * investor can only force this once (their position goes to zero), so the
+     * reset is bounded by the number of contributors.
+     */
+    function optOut() external nonReentrant returns (uint256 refundAmount) {
+        if (status == Status.Activated) revert AlreadyActivated();
+        if (status != Status.Succeeded) revert NotSucceeded();
+        if (pendingSplitter == address(0)) revert NoPendingActivation();
+        if (block.timestamp >= activationEta) revert NoticePeriodOver();
+
+        uint256 shares = contributions[msg.sender];
+        if (shares == 0) revert NothingToRefund();
+
+        refundAmount = shares * pricePerShare;
+
+        // effects
+        contributions[msg.sender] = 0;
+        totalSharesSold -= shares;
+        totalRaised -= refundAmount;
+        emit CfActivationCancelled(pendingSplitter);
+        pendingSplitter = address(0);
+        activationEta = 0;
+
+        paymentToken.safeTransfer(msg.sender, refundAmount);
+        emit CfOptOut(msg.sender, shares, refundAmount);
+    }
+
+    /**
+     * AUDIT 2026-08 (N-2). Escape hatch for a campaign that hit its soft cap and
+     * was then abandoned. `refund` only opens on Failed, and only the admin
+     * could move a Succeeded campaign anywhere — so an admin who simply walked
+     * away left every contribution locked in escrow forever. After the
+     * activation window closes, anyone can flip the campaign to Failed, which
+     * opens the ordinary per-investor refund path.
+     */
+    function expireActivation() external returns (Status) {
+        if (status != Status.Succeeded) revert NotSucceeded();
+        if (block.timestamp < deadline + ACTIVATION_DEADLINE) revert ActivationWindowStillOpen();
+
+        status = Status.Failed;
+        pendingSplitter = address(0);
+        activationEta = 0;
+        emit CfActivationExpired(totalRaised);
+        return status;
     }
 
     /**
@@ -161,6 +312,10 @@ contract CrowdfundingV1 is ReentrancyGuard {
     }
 
     // ---- views ----
+    function getPendingActivation() external view returns (address _splitter, uint256 _eta) {
+        return (pendingSplitter, activationEta);
+    }
+
     function getContribution(address investor) external view returns (uint256) {
         return contributions[investor];
     }

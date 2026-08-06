@@ -53,6 +53,8 @@ contract DistributionPoolV2 is BasePool {
     uint256 internal constant DEFAULT_ROUND_EXPIRY = 365 days;
     uint256 internal constant DEFAULT_DIST_COMMISSION_BPS = 50; // 0.5%
     uint256 internal constant MAX_COMMISSION_BPS = 5000; // 50% hard cap
+    // AUDIT 2026-08 (B-3): minimum time a round must stay claimable.
+    uint256 internal constant MIN_CLAIM_WINDOW = 30 days;
 
     // ---- custom errors (smaller bytecode than require-strings) ----
     error TokenNotSet();
@@ -75,6 +77,7 @@ contract DistributionPoolV2 is BasePool {
     error TransferFailed();
     error PushDisabled();
     error ExternalTokenAlreadySet();
+    error NotAuthorizedToDistribute();
 
     // ---- events (indexed on the dimensions the indexer queries) ----
     event DistributionRoundCreated(
@@ -275,6 +278,15 @@ contract DistributionPoolV2 is BasePool {
     //******************************* */
     // transfers
 
+    /**
+     * AUDIT 2026-08 (B-4). This used to call `IERC20.transfer` through the typed
+     * interface, which makes the ABI decoder demand a 32-byte bool back. USDT
+     * and other pre-EIP-20-final tokens return NOTHING, so the decode reverts
+     * and every claim, commission payment and reclaim on such a token is
+     * permanently stuck — with the funds already in the pool. The low-level call
+     * below accepts both shapes: empty return data means success, a returned
+     * word must decode to true.
+     */
     function _transferOut(
         address _token,
         address _to,
@@ -284,7 +296,10 @@ contract DistributionPoolV2 is BasePool {
         if (_token == address(0)) {
             success = _sendTo(_to, _amount);
         } else {
-            success = IERC20(_token).transfer(_to, _amount);
+            (bool ok, bytes memory ret) = _token.call(
+                abi.encodeWithSelector(IERC20.transfer.selector, _to, _amount)
+            );
+            success = ok && (ret.length == 0 || abi.decode(ret, (bool)));
         }
         if (!success) {
             revert TransferFailed();
@@ -352,15 +367,6 @@ contract DistributionPoolV2 is BasePool {
             revert NothingToDistribute();
         }
 
-        // snapshot each holder's balance now; claims are computed from this
-        // snapshot (not the live balance), so shares transferred after the
-        // round cannot be used to re-claim it from a fresh address.
-        uint256 snapId = IParticipationSnapshot(getParticipationToken()).snapshot();
-        uint256 supply = IParticipationSnapshot(getParticipationToken()).totalSupplyAt(snapId);
-        if (supply == 0) {
-            revert NoParticipationSupply();
-        }
-
         // only take commission if a recipient (treasury) is set — otherwise the
         // transfer to address(0) would revert (ERC20) or burn (native).
         address treasury = getTreasuryAddress();
@@ -372,7 +378,15 @@ contract DistributionPoolV2 is BasePool {
             revert AmountAfterCommissionZero();
         }
 
-        // reserve the distributable amount (commission leaves the contract now)
+        // AUDIT 2026-08 (B-2). Reserve the funds and burn the round id BEFORE
+        // the external `snapshot()` call, not after. The participation token is
+        // an independent contract; if it can re-enter (a malicious or upgraded
+        // token, or one supplied by the pool creator), the old order let the
+        // re-entrant call read the SAME unallocated balance — `distribution`
+        // had not been bumped yet — and mint a second round backed by the same
+        // money, so the two rounds together promise more than the pool holds and
+        // the last claimers find an empty contract. With the reserve written
+        // first, the re-entrant call sees `unallocated == 0` and reverts.
         uint256 dist = getStateVariableTokenUint256(
             uint256(KeyPrefix.distribution),
             _token
@@ -387,6 +401,17 @@ contract DistributionPoolV2 is BasePool {
         _S.setUint256(_ptKey(KeyPrefix.roundCount, _token), roundId.add(1));
 
         uint256 nowT = block.timestamp;
+        _S.setUint256(_ptKey(KeyPrefix.lastRoundCreatedAt, _token), nowT);
+
+        // snapshot each holder's balance now; claims are computed from this
+        // snapshot (not the live balance), so shares transferred after the
+        // round cannot be used to re-claim it from a fresh address.
+        uint256 snapId = IParticipationSnapshot(getParticipationToken()).snapshot();
+        uint256 supply = IParticipationSnapshot(getParticipationToken()).totalSupplyAt(snapId);
+        if (supply == 0) {
+            revert NoParticipationSupply();
+        }
+
         uint256 claimableFrom = nowT.add(_claimDelay());
         uint256 expiresAt = nowT.add(_roundExpiry());
 
@@ -396,7 +421,6 @@ contract DistributionPoolV2 is BasePool {
         _S.setUint256(_rKey(KeyPrefix.roundCreatedAt, _token, roundId), nowT);
         _S.setUint256(_rKey(KeyPrefix.roundClaimableFrom, _token, roundId), claimableFrom);
         _S.setUint256(_rKey(KeyPrefix.roundExpiresAt, _token, roundId), expiresAt);
-        _S.setUint256(_ptKey(KeyPrefix.lastRoundCreatedAt, _token), nowT);
 
         // pay commission to treasury (state already set: reentrancy-safe)
         if (commission > 0) {
@@ -417,15 +441,45 @@ contract DistributionPoolV2 is BasePool {
     /**
      * create a new distribution round for `_token`. O(1): snapshots the
      * unallocated balance and participation-token supply; no per-holder loop.
-     * Reward pools are owner-only (see {distributePermissions}).
+     *
+     * AUDIT 2026-08 (B-1). This used to carry {distributePermissions}, which
+     * only checks the caller on Reward pools — on Treasury and Payroll pools
+     * ANYONE could create a round. Harmless under V1's push model, where the
+     * caller changed nothing but the timing, but decisive under V2: the caller
+     * chooses the instant the participation-token snapshot is taken, and the
+     * snapshot decides who gets paid and how much. It also hands out a free
+     * denial of service — a stranger creates a dust round the moment funds
+     * arrive, and the time-gate then blocks the real distribution for the whole
+     * `minInterval` (12 h by default), repeatable forever.
+     *
+     * Owner-only by default for every pool type. A pool that genuinely wants
+     * anyone to be able to trigger it (a keeper, a cron, a DAO) opts in
+     * explicitly through {setPublicDistribution}.
      */
     function createDistribution(
         address _token
-    ) external distributePermissions returns (uint256 roundId) {
+    ) external returns (uint256 roundId) {
+        if (
+            msg.sender != owner() &&
+            !_S.getBool(_pKey(KeyPrefix.publicDistribution))
+        ) {
+            revert NotAuthorizedToDistribute();
+        }
         if (!_canCreateDistribution(_token)) {
             revert DistributionTooSoon();
         }
         return _doCreateDistribution(_token);
+    }
+
+    /**
+     * Owner opt-in to permissionless {createDistribution}. Off by default.
+     */
+    function setPublicDistribution(bool _enabled) external onlyOwner {
+        _S.setBool(_pKey(KeyPrefix.publicDistribution), _enabled);
+    }
+
+    function isPublicDistribution() external view returns (bool) {
+        return _S.getBool(_pKey(KeyPrefix.publicDistribution));
     }
 
     //******************************* */
@@ -622,12 +676,25 @@ contract DistributionPoolV2 is BasePool {
     //******************************* */
     // distribution config
 
+    /**
+     * AUDIT 2026-08 (B-3). The only bound used to be `claimDelay < expiry`, so
+     * the owner could set `delay = 0, expiry = 1` and leave holders a ONE SECOND
+     * window to claim; every future round then expires immediately and
+     * {reclaimExpiredRound} forwards the whole unclaimed remainder to the owner.
+     * That is a rug with no code change and no warning. A round must now stay
+     * claimable for at least MIN_CLAIM_WINDOW, which matches the 30-day floor
+     * enforced by the Stellar splitter.
+     */
     function setDistributionConfig(
         uint256 _minIntervalSeconds,
         uint256 _claimDelaySeconds,
         uint256 _roundExpirySeconds
     ) external onlyOwner {
-        if (_roundExpirySeconds == 0 || _claimDelaySeconds >= _roundExpirySeconds) {
+        if (
+            _roundExpirySeconds == 0 ||
+            _claimDelaySeconds >= _roundExpirySeconds ||
+            _roundExpirySeconds - _claimDelaySeconds < MIN_CLAIM_WINDOW
+        ) {
             revert ExpiryMustBePositive();
         }
         _S.setUint256(_pKey(KeyPrefix.minIntervalSeconds), _minIntervalSeconds);
