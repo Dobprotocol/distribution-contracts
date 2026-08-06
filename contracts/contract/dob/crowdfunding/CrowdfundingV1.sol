@@ -30,7 +30,16 @@ contract CrowdfundingV1 is ReentrancyGuard {
 
     /// How long an announced activation must sit in public before it can
     /// execute (AUDIT 2026-08 / N-1).
-    uint256 public constant ACTIVATION_TIMELOCK = 7 days;
+    ///
+    /// DELIBERATELY ZERO. The two-step flow is kept — the destination is still
+    /// probed, still announced on-chain, and `activate` still has to repeat the
+    /// exact address that was proposed — but the protocol imposes no waiting
+    /// period on a legitimate raise. Announcing and then waiting is a policy the
+    /// platform can apply off-chain simply by not activating immediately; while
+    /// it waits, `optOut` below is open. The checks that read this constant are
+    /// left in place and armed, so raising it to `1 days` is a one-line change
+    /// that needs no other edit and no ABI churn.
+    uint256 public constant ACTIVATION_TIMELOCK = 0;
 
     /// How long after the campaign deadline the admin has to activate before
     /// investors can force refunds open (AUDIT 2026-08 / N-2).
@@ -80,6 +89,10 @@ contract CrowdfundingV1 is ReentrancyGuard {
     error ActivationWindowExpired();
     error ActivationWindowStillOpen();
     error PaymentTokenNotSupported();
+    /// Kept declared, no longer thrown: `optOut` is gated on a proposal being
+    /// pending rather than on the (zero) timelock. Raising ACTIVATION_TIMELOCK
+    /// above zero does not resurrect it either — the exit stays open for the
+    /// whole pending period by design.
     error NoticePeriodOver();
 
     // ---- events ----
@@ -176,9 +189,14 @@ contract CrowdfundingV1 is ReentrancyGuard {
      * index of its investors (only a per-address mapping), so it cannot verify
      * on-chain that the proposed splitter's cap table matches the contributors —
      * that check is impossible here by construction. What it can do is refuse
-     * addresses that are obviously not a pool, and turn a silent instant
-     * transfer of every investor's money into a publicly announced one with a
-     * week of lead time, so investors can see it and react before it lands.
+     * addresses that are obviously not a pool — which is what actually kills the
+     * fat-finger that used to send an entire raise into the void — and put the
+     * destination on-chain before a single token moves, so the transfer is
+     * auditable instead of silent.
+     *
+     * With ACTIVATION_TIMELOCK at zero the admin may call `activate` right
+     * after this. The announcement is then an audit record rather than a review
+     * window; the window is optional and served by waiting.
      */
     function proposeActivation(address _splitter) external onlyAdmin returns (uint256 eta) {
         if (status == Status.Activated) revert AlreadyActivated();
@@ -240,10 +258,16 @@ contract CrowdfundingV1 is ReentrancyGuard {
     }
 
     /**
-     * AUDIT 2026-08 (N-1, second half). A notice period is only worth something
-     * if investors can act on it. During the timelock — and only then — a
-     * contributor who does not accept the announced destination takes their
-     * money back and leaves the campaign.
+     * AUDIT 2026-08 (N-1, second half). An announcement is only worth something
+     * if investors can act on it. While a proposal is pending — from the moment
+     * it is announced until it executes or is withdrawn — a contributor who
+     * does not accept the destination takes their money back and leaves.
+     *
+     * This is gated on the proposal being pending, NOT on the timelock, which
+     * is zero: an exit tied to a zero-length window would be unreachable code.
+     * So the length of the exit window is exactly how long the admin waits
+     * between proposing and activating. Activate immediately and there is no
+     * exit; announce a day ahead and investors have that day.
      *
      * Leaving also withdraws the proposal. The admin sized the splitter's cap
      * table against the contributor list as it stood when they proposed; if
@@ -257,7 +281,6 @@ contract CrowdfundingV1 is ReentrancyGuard {
         if (status == Status.Activated) revert AlreadyActivated();
         if (status != Status.Succeeded) revert NotSucceeded();
         if (pendingSplitter == address(0)) revert NoPendingActivation();
-        if (block.timestamp >= activationEta) revert NoticePeriodOver();
 
         uint256 shares = contributions[msg.sender];
         if (shares == 0) revert NothingToRefund();

@@ -34,7 +34,9 @@ async function increaseTime(s: number) {
 }
 
 const DAY = 24 * 3600;
-const TIMELOCK = 7 * DAY;
+// Mirrors CrowdfundingV1.ACTIVATION_TIMELOCK, deliberately zero: the two-step
+// flow stays, the mandatory wait does not.
+const TIMELOCK = 0;
 const ACTIVATION_WINDOW = 90 * DAY;
 
 describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
@@ -122,17 +124,14 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
             cf.connect(admin).functions.activate(poolLike.address)
         ).to.be.revertedWithCustomError(cf, "NoPendingActivation");
 
-        // The honest path: announce, wait, execute.
+        // The honest path: announce, then execute. TIMELOCK is zero, so the ETA
+        // is the announcement itself — a legitimate raise is not made to wait.
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
         const [pending, eta] = await cf.functions.getPendingActivation();
         expect(pending).to.equal(poolLike.address);
-        expect(eta.toNumber()).to.be.greaterThan(await now());
+        expect(eta.toNumber()).to.equal((await now()) + TIMELOCK);
 
-        // Not a second early, and not to a different address than announced.
-        await expect(
-            cf.connect(admin).functions.activate(poolLike.address)
-        ).to.be.revertedWithCustomError(cf, "ActivationTimelockPending");
-        await increaseTime(TIMELOCK + 1);
+        // Not to a different address than the one announced.
         await expect(
             cf.connect(admin).functions.activate(attackerWallet.address)
         ).to.be.revertedWithCustomError(cf, "SplitterMismatch");
@@ -214,7 +213,7 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         ).to.be.revertedWithCustomError(cf, "ActivationWindowExpired");
     });
 
-    it("N-1: an investor can leave while the notice is running, and that withdraws the proposal", async function () {
+    it("N-1: an investor can leave while a proposal stands, and that withdraws it", async function () {
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
 
         const before = (await token.functions.balanceOf(inv1.address))[0];
@@ -239,20 +238,16 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
             cf.connect(admin).functions.activate(poolLike.address)
         ).to.be.revertedWithCustomError(cf, "NoPendingActivation");
 
-        // A fresh proposal serves a fresh notice, and only the remaining money
-        // ever moves.
+        // The admin has to announce again, against the corrected contributor
+        // list, and only the remaining money ever moves.
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
-        await expect(
-            cf.connect(admin).functions.activate(poolLike.address)
-        ).to.be.revertedWithCustomError(cf, "ActivationTimelockPending");
-        await increaseTime(TIMELOCK + 1);
         await cf.connect(admin).functions.activate(poolLike.address);
         expect((await token.functions.balanceOf(poolLike.address))[0]).to.equal(PRICE.mul(80));
         expect((await token.functions.balanceOf(cf.address))[0]).to.equal(0);
     });
 
-    it("N-1: leaving is only possible while a notice is actually running", async function () {
-        // No proposal yet.
+    it("N-1: leaving is only possible while a proposal is standing", async function () {
+        // No proposal yet: there is nothing announced to object to.
         await expect(
             cf.connect(inv1).functions.optOut()
         ).to.be.revertedWithCustomError(cf, "NoPendingActivation");
@@ -260,23 +255,35 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
 
         // A non-contributor has nothing to take back, and cannot use the call
-        // to reset the notice on everyone else's behalf.
+        // to reset the proposal on everyone else's behalf.
         await expect(
             cf.connect(attackerWallet).functions.optOut()
         ).to.be.revertedWithCustomError(cf, "NothingToRefund");
         expect((await cf.functions.getPendingActivation())[0]).to.equal(poolLike.address);
 
-        // Once the notice elapses the admin may act, so the exit closes.
-        await increaseTime(TIMELOCK + 1);
+        // Withdrawing the proposal closes the exit again — the exit tracks the
+        // standing announcement, not the clock.
+        await cf.connect(admin).functions.cancelActivation();
         await expect(
             cf.connect(inv1).functions.optOut()
-        ).to.be.revertedWithCustomError(cf, "NoticePeriodOver");
+        ).to.be.revertedWithCustomError(cf, "NoPendingActivation");
 
-        // And after activation there is nothing left to leave.
+        // And once the escrow has moved there is nothing left to leave.
+        await cf.connect(admin).functions.proposeActivation(poolLike.address);
         await cf.connect(admin).functions.activate(poolLike.address);
         await expect(
             cf.connect(inv1).functions.optOut()
         ).to.be.revertedWithCustomError(cf, "AlreadyActivated");
+    });
+
+    it("N-1: the timelock check is still armed at zero", async function () {
+        // The delay is a knob set to zero, not a check that was deleted. The
+        // comparison against the stored ETA is still in the contract, so
+        // raising ACTIVATION_TIMELOCK re-arms it with no other code change.
+        expect((await cf.functions.ACTIVATION_TIMELOCK())[0]).to.equal(0);
+        await cf.connect(admin).functions.proposeActivation(poolLike.address);
+        const [, eta] = await cf.functions.getPendingActivation();
+        expect(eta.toNumber()).to.equal((await now()) + TIMELOCK);
     });
 
     it("N-3: a fee-on-transfer payment token is rejected at contribution", async function () {

@@ -1,14 +1,14 @@
 {
   "network": "basesepolia",
   "deployer": "0x305DaB055730E0b3AB193051e67ADa3E9BC59142",
-  "storage": "0xd42975d776a1AAff8eff3d5Ade9093E86A3a1660",
-  "poolMasterConfig": "0xb897D7D3E026E51c734bfB3227bBD4dDaB4176Ee",
-  "poolMaster": "0x8081F02CB067C8f5728f589f78940c0B7B32f5D1",
-  "distributionPoolV2Logic": "0x880724804F6A117FAb956164e7EC23d46d3752F1",
-  "crowdfundingFactory": "0xDF95037bbFF646C04016E29085525923B68fe46E",
-  "v2DistributionPool": "0xBbB7477508096aB30842b318Dab97711d0d89682",
-  "crowdfundingCampaign": "0x6715C8E17A56297b1a8E7763E154adf297eb3236",
-  "crowdfundingPool": "0x2060Be7DB28892ede445Fb4De6a609D3F07c2a06",
-  "crowdfundingToken": "0x83f53669Bb7A8A6023597b9B8F4f446C408a3E56",
-  "activationEta": 1786631844
+  "storage": "0x30439efd5aA51E3f04844eB13B9734ed0EE40C01",
+  "poolMasterConfig": "0xb1e24cEA86b7150f8867edC415E9c0e1aDF5998d",
+  "poolMaster": "0xB401721b14959DE93aDc7D0332DB2F932c7EF103",
+  "distributionPoolV2Logic": "0xB55bF7bF24BD39CCFE077BfEE14c2d777e123DBc",
+  "crowdfundingFactory": "0x0d99999caF221BCc545Ced308fA340B5286b805C",
+  "v2DistributionPool": "0x8735De472Ac756800227EFC45740D69FEcD7cf5c",
+  "crowdfundingCampaign": "0xAc62855A459e208F034c5ab787bA6A4CCa84e4D6",
+  "crowdfundingPool": "0x4C669b4d9dA9938e5dd2a45513877f2Bf4aEBbD8",
+  "crowdfundingToken": "0x6ea056AC2aB8Fe8D4b55ea18Dc3C24421c8f4e41",
+  "activationEta": 1786033166
 }

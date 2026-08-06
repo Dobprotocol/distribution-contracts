@@ -161,43 +161,24 @@ async function main() {
     await waitForCode(cfPool.address, "CF distribution pool");
     const raised = (await cf.functions.totalRaised())[0];
 
-    // AUDIT 2026-08 (N-1): activation is now propose -> 7-day notice -> activate,
-    // and during the notice any investor may `optOut`. A live chain cannot be
-    // fast-forwarded, so this run proves everything up to and including the
-    // timelock refusing an early activation; `finish_cf_basesepolia.js` finishes
-    // the campaign once the week has actually passed. The timed transitions
-    // themselves are covered with warped clocks in
-    // test/crowdfunding/audit_2026_08_crowdfunding.ts.
+    // AUDIT 2026-08 (N-1): activation is two-step — propose (destination probed
+    // and announced on-chain) then activate, which must repeat the exact address
+    // proposed. ACTIVATION_TIMELOCK is zero, so both steps fit in one run and the
+    // whole campaign closes here.
     await send(cf.connect(signer).functions.proposeActivation(cfPool.address));
     const [pendingSplitter, eta] = await cf.functions.getPendingActivation();
+
+    // The exit is only a protection if the investor can actually take it while
+    // the proposal stands. Probed with eth_call so the escrow is left intact —
+    // a real optOut would refund the contribution AND withdraw the proposal,
+    // which is the behaviour test/crowdfunding covers with a warped clock.
     //
-    // The assertion is made with a raw eth_call rather than a real transaction:
-    // a send goes through estimateGas first, and the public endpoint answers that
-    // with a bare "execution reverted" — no custom-error payload — so we could
-    // only prove that SOMETHING reverted, not which guard fired. eth_call carries
-    // the four-byte selector, which pins it to ActivationTimelockPending exactly.
-    //
-    // Base Sepolia's endpoint hands that selector back as an ordinary eth_call
-    // RETURN VALUE instead of raising a JSON-RPC error, so both shapes are read.
-    const TIMELOCK_ERR = ethers.utils.id("ActivationTimelockPending()").slice(0, 10);
-    let revertData = "";
-    try {
-        revertData = await ethers.provider.call({
-            to: campAddr,
-            from: signer.address,
-            data: cf.interface.encodeFunctionData("activate", [cfPool.address]),
-        });
-    } catch (e: any) {
-        revertData = e.data || e.error?.data?.data || e.error?.data || e.message || "";
-    }
-    const timelockHolds = typeof revertData === "string" && revertData.startsWith(TIMELOCK_ERR);
-    console.log("  early activate rejected:", timelockHolds
-        ? `ActivationTimelockPending (${TIMELOCK_ERR}) ✓`
-        : `❌ activate() did NOT hit the timelock — got: ${revertData || "(empty = it would have succeeded)"}`);
-    // The other half of N-1: the notice period is only a protection if the
-    // investor can actually leave during it. Probed with eth_call so the escrow
-    // is left intact — a real optOut would refund the contribution AND withdraw
-    // the proposal, which is exactly the behaviour test/crowdfunding covers.
+    // eth_call rather than a transaction for a second reason: a send goes
+    // through estimateGas, and this public endpoint answers a revert there with
+    // a bare "execution reverted" and no custom-error payload, so a failure
+    // could not be pinned to a specific guard. Note also that Base Sepolia hands
+    // revert data back as an ordinary eth_call RETURN VALUE instead of raising a
+    // JSON-RPC error, so both shapes have to be read.
     let optOutOk = false;
     try {
         const ret = await ethers.provider.call({
@@ -205,15 +186,45 @@ async function main() {
             data: cf.interface.encodeFunctionData("optOut", []),
         });
         optOutOk = ret.length === 66 && ethers.BigNumber.from(ret).eq(raised);
-        console.log("  optOut available during notice, would refund:",
+        console.log("  optOut available while the proposal stands, would refund:",
             ethers.utils.formatEther(ethers.BigNumber.from(ret)), "TUSD", optOutOk ? "✓" : "❌");
     } catch (e: any) {
-        console.log("  ❌ optOut rejected during the notice period:", e.reason || e.message);
+        console.log("  ❌ optOut rejected with a proposal standing:", e.reason || e.message);
     }
 
-    const cfOk = cfStatus === 1 /* Succeeded */ && pendingSplitter === cfPool.address && timelockHolds && optOutOk;
-    console.log("  status Succeeded:", cfStatus === 1, "| escrow held:", ethers.utils.formatEther(raised), "TUSD",
-        "| activation announced for:", new Date(eta.toNumber() * 1000).toISOString());
+    // activate() must repeat the announced address; anything else is refused.
+    const MISMATCH_ERR = ethers.utils.id("SplitterMismatch()").slice(0, 10);
+    let mismatchData = "";
+    try {
+        mismatchData = await ethers.provider.call({
+            to: campAddr, from: signer.address,
+            data: cf.interface.encodeFunctionData("activate", [token.address]),
+        });
+    } catch (e: any) {
+        mismatchData = e.data || e.error?.data?.data || e.error?.data || e.message || "";
+    }
+    const mismatchHolds = typeof mismatchData === "string" && mismatchData.startsWith(MISMATCH_ERR);
+    console.log("  activate to an address other than the one announced:", mismatchHolds
+        ? `SplitterMismatch (${MISMATCH_ERR}) ✓`
+        : `❌ not refused — got: ${mismatchData || "(empty = it would have succeeded)"}`);
+
+    // Close the campaign for real: the whole escrow moves to the announced pool.
+    await send(cf.connect(signer).functions.activate(cfPool.address));
+    const poolEscrow = await readWithRetry(
+        async () => (await token.functions.balanceOf(cfPool.address))[0],
+        (v) => v.eq(raised), "escrow moved to pool");
+    const campLeft = (await token.functions.balanceOf(campAddr))[0];
+    const cfFinalStatus = (await readWithRetry(
+        async () => (await cf.functions.status())[0], (v) => v === 3, "status Activated"));
+    const escrowOk = poolEscrow.eq(raised) && campLeft.isZero() && cfFinalStatus === 3;
+    console.log("  activated:", escrowOk
+        ? `${ethers.utils.formatEther(poolEscrow)} TUSD moved, campaign drained ✓`
+        : `❌ pool=${ethers.utils.formatEther(poolEscrow)} camp=${ethers.utils.formatEther(campLeft)} status=${cfFinalStatus}`);
+
+    const cfOk = cfStatus === 1 /* Succeeded before activation */
+        && pendingSplitter === cfPool.address && optOutOk && mismatchHolds && escrowOk;
+    console.log("  escrow raised:", ethers.utils.formatEther(raised), "TUSD",
+        "| announced at:", new Date(eta.toNumber() * 1000).toISOString());
 
     // ---- save ----
     const out = {
@@ -226,9 +237,9 @@ async function main() {
     };
     fs.writeFileSync("deploys/deploy_base_sepolia_v2.json", JSON.stringify(out, null, 2));
     console.log("\n" + ((distOk && cfOk)
-        ? "✅ E2E PASSED on Base Sepolia (V2 distribution complete; crowdfunding through proposeActivation)"
+        ? "✅ E2E PASSED on Base Sepolia (V2 distribution + full crowdfunding lifecycle)"
         : "❌ E2E had failures — review logs"));
-    console.log("   finish the campaign after the notice period with:");
+    console.log("   distribute the raised funds to the CF pool holders with:");
     console.log("   npx hardhat run scripts/finish_cf_basesepolia.js --network basesepolia");
     console.log(JSON.stringify(out, null, 2));
     if (!(distOk && cfOk)) process.exit(1);
