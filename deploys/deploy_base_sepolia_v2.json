@@ -1,0 +1,14 @@
+{
+  "network": "basesepolia",
+  "deployer": "0x305DaB055730E0b3AB193051e67ADa3E9BC59142",
+  "storage": "0xd42975d776a1AAff8eff3d5Ade9093E86A3a1660",
+  "poolMasterConfig": "0xb897D7D3E026E51c734bfB3227bBD4dDaB4176Ee",
+  "poolMaster": "0x8081F02CB067C8f5728f589f78940c0B7B32f5D1",
+  "distributionPoolV2Logic": "0x880724804F6A117FAb956164e7EC23d46d3752F1",
+  "crowdfundingFactory": "0xDF95037bbFF646C04016E29085525923B68fe46E",
+  "v2DistributionPool": "0xBbB7477508096aB30842b318Dab97711d0d89682",
+  "crowdfundingCampaign": "0x6715C8E17A56297b1a8E7763E154adf297eb3236",
+  "crowdfundingPool": "0x2060Be7DB28892ede445Fb4De6a609D3F07c2a06",
+  "crowdfundingToken": "0x83f53669Bb7A8A6023597b9B8F4f446C408a3E56",
+  "activationEta": 1786631844
+}
