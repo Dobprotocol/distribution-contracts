@@ -24,8 +24,9 @@ describe("Crowdfunding integration — campaign success funds a V2 splitter, inv
     const PRICE = parseEther("1");
     const SOFT = 100, HARD = 1000;
 
-    // Activation is timelocked, so this suite jumps a week ahead. Hardhat shares
-    // one in-memory node across the whole run — put the clock back afterwards.
+    // This suite moves the clock (campaign deadlines, the 90-day activation
+    // window). Hardhat shares one in-memory node across the whole run — put the
+    // clock back afterwards.
     let snapshotId: string;
 
     afterEach(async function () {
@@ -81,10 +82,11 @@ describe("Crowdfunding integration — campaign success funds a V2 splitter, inv
             _pm, _pmc, admin, [inv1.address, inv2.address], [60, 40], 0
         );
 
-        // 5. admin announces the destination, waits out the timelock, activates
-        //    -> escrowed funds move to the pool (AUDIT 2026-08 / N-1)
+        // 5. admin announces the destination, then activates it -> escrowed
+        //    funds move to the pool (AUDIT 2026-08 / N-1). ACTIVATION_TIMELOCK
+        //    is zero, so the two steps may land in consecutive blocks; the
+        //    announcement is the audit record, not a mandatory wait.
         await cf.connect(admin).functions.proposeActivation(pool.address);
-        await increaseTime(7 * 24 * 3600 + 1);
         await cf.connect(admin).functions.activate(pool.address);
         expect((await cf.functions.status())[0]).to.equal(3); // Activated
         expect((await token.functions.balanceOf(pool.address))[0]).to.equal(raised);

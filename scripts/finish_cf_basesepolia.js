@@ -1,9 +1,14 @@
 // Second half of the Base Sepolia crowdfunding E2E.
 //
-// `deploy_e2e_basesepolia.ts` takes the campaign as far as a live chain allows
-// in one sitting: contribute -> finalize -> proposeActivation, and it proves the
-// 7-day notice period refuses an early activation. This script finishes the job
-// once that week has actually elapsed: activate -> createDistribution -> claim.
+// `deploy_e2e_basesepolia.ts` now runs the campaign all the way through
+// activation in one sitting (ACTIVATION_TIMELOCK is zero), so on a fresh run
+// this script picks up an already-Activated campaign and only does the part
+// that belongs to the pool rather than to the campaign:
+// createDistribution -> claim.
+//
+// The activation branch below is kept for a campaign left mid-flight — for
+// instance one where an investor opted out and the proposal has to be renewed,
+// or one created against a build with a non-zero timelock.
 //
 //   npx hardhat run scripts/finish_cf_basesepolia.js --network basesepolia
 //
