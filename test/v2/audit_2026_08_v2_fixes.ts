@@ -28,6 +28,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { expect } from "chai";
 import "@nomicfoundation/hardhat-chai-matchers";
+import { takeSnapshot, SnapshotRestorer } from "@nomicfoundation/hardhat-network-helpers";
 import {
     deployStorage,
     deployPoolLogic,
@@ -45,6 +46,14 @@ async function increaseTime(seconds: number) {
 }
 
 describe("AUDIT 2026-08 / DistributionPoolV2 + ParticipationToken", function () {
+    // Same reason as in test/crowdfunding/audit_2026_08_crowdfunding.ts: this block
+    // advances the shared EVM clock (13h for the min-interval gate, 29 days for the
+    // round expiry), and the date-based tests later in the suite read that clock.
+    // Restore it so the drift stays local to this file.
+    let clockSnapshot: SnapshotRestorer;
+    before(async function () { clockSnapshot = await takeSnapshot(); });
+    after(async function () { await clockSnapshot.restore(); });
+
     let accounts: SignerWithAddress[];
     let creator: SignerWithAddress;
     let operational: SignerWithAddress;

@@ -21,6 +21,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { expect } from "chai";
 import "@nomicfoundation/hardhat-chai-matchers";
+import { takeSnapshot, SnapshotRestorer } from "@nomicfoundation/hardhat-network-helpers";
 import { deployExternalToken } from "../utils/deploys";
 
 const parseEther = ethers.utils.parseEther;
@@ -40,6 +41,16 @@ const TIMELOCK = 0;
 const ACTIVATION_WINDOW = 90 * DAY;
 
 describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
+    // These tests push the EVM clock forward by hundreds of days to exercise the
+    // activation timelock and the 90-day window. The Hardhat node is shared by the
+    // whole suite, so leaving the clock where we moved it makes the date-based
+    // tests in test/v2/distribution_test1 and _test3 compute a nextDistribution
+    // months into the future and fail — a failure that has nothing to do with the
+    // code under test. Snapshot on the way in, restore on the way out.
+    let clockSnapshot: SnapshotRestorer;
+    before(async function () { clockSnapshot = await takeSnapshot(); });
+    after(async function () { await clockSnapshot.restore(); });
+
     let admin: SignerWithAddress;
     let inv1: SignerWithAddress;
     let inv2: SignerWithAddress;
