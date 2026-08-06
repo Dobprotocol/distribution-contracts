@@ -24,7 +24,16 @@ describe("Crowdfunding integration — campaign success funds a V2 splitter, inv
     const PRICE = parseEther("1");
     const SOFT = 100, HARD = 1000;
 
+    // Activation is timelocked, so this suite jumps a week ahead. Hardhat shares
+    // one in-memory node across the whole run — put the clock back afterwards.
+    let snapshotId: string;
+
+    afterEach(async function () {
+        await ethers.provider.send("evm_revert", [snapshotId]);
+    });
+
     beforeEach(async function () {
+        snapshotId = await ethers.provider.send("evm_snapshot", []);
         accounts = await ethers.getSigners();
         creator = accounts[0]; operational = accounts[1]; admin = accounts[2];
         inv1 = accounts[3]; inv2 = accounts[4]; stranger = accounts[10];
@@ -72,7 +81,10 @@ describe("Crowdfunding integration — campaign success funds a V2 splitter, inv
             _pm, _pmc, admin, [inv1.address, inv2.address], [60, 40], 0
         );
 
-        // 5. admin activates -> escrowed funds move to the pool
+        // 5. admin announces the destination, waits out the timelock, activates
+        //    -> escrowed funds move to the pool (AUDIT 2026-08 / N-1)
+        await cf.connect(admin).functions.proposeActivation(pool.address);
+        await increaseTime(7 * 24 * 3600 + 1);
         await cf.connect(admin).functions.activate(pool.address);
         expect((await cf.functions.status())[0]).to.equal(3); // Activated
         expect((await token.functions.balanceOf(pool.address))[0]).to.equal(raised);

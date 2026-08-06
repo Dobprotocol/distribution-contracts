@@ -54,6 +54,12 @@ contract TokenSaleMarket is
 
     event SaleLockStatus(address token, address seller, bool locked);
 
+    event NativeRescued(address to, uint256 amount);
+
+    /// Upper bound for the platform commission, in basis points (10 %).
+    /// AUDIT 2026-08 (M-7).
+    uint256 internal constant MAX_FEE_BPS = 1000;
+
     constructor(
         address _storage
     ) AccessStorageOwnableInitializable(_storage, "token.sale.market") {}
@@ -70,7 +76,7 @@ contract TokenSaleMarket is
         address _owner,
         uint256 _commissionFee
     ) public virtual initializer {
-        require(_commissionFee < 10000, "COMMISSION_SHOULD_BE_LOWER_THAN_10000");
+        require(_commissionFee <= MAX_FEE_BPS, "FEE_ABOVE_MAX");
 
         // ownable init
         _transferOwnership(_owner);
@@ -172,11 +178,17 @@ contract TokenSaleMarket is
         return token.allowance(seller, address(this)) >= nTokenToBuy;
     }
 
-    function _transferTo(
-        address _to,
-        uint256 _amount
-    ) internal returns (bool success) {
-        success = payable(_to).send(_amount);
+    /**
+     * AUDIT 2026-08 (M-2). This used `payable(_to).send(_amount)`, whose bool was
+     * discarded at both call sites in {buyToken}: if the payout failed the buyer
+     * still got the tokens and the seller's ETH stayed in this contract, which
+     * has no withdraw path. `send` forwards only 2300 gas, so any seller behind a
+     * multisig or a smart wallet failed by construction — not an edge case. Now
+     * the transfer forwards all gas and the sale reverts when it fails.
+     */
+    function _transferTo(address _to, uint256 _amount) internal {
+        (bool success, ) = payable(_to).call{value: _amount}("");
+        require(success, "NATIVE_TRANSFER_FAILED");
     }
 
     function getRemainingSale(address token_, address seller) public view returns(uint256){
@@ -329,11 +341,39 @@ contract TokenSaleMarket is
         );
     }
 
+    /**
+     * AUDIT 2026-08 (M-7). `newFee` was unbounded, and it is applied as
+     * `fee * msg.value / 10000`. At 10000 the platform takes 100 % of a sale and
+     * the seller hands over their tokens for nothing; above 10000 the `sub`
+     * underflows and every sale of a commissioned listing reverts. Neither is a
+     * fee the owner should be able to set by accident, and a buyer has no way to
+     * see the fee change coming — it applies to the sale they are already
+     * signing. Capped at 10 %.
+     */
     function updateFee(uint256 newFee) public onlyOwner onlyProxy {
+        require(newFee <= MAX_FEE_BPS, "FEE_ABOVE_MAX");
         _S.setUint256(
             _pKey(KeyPrefix.tokenSaleMarketCommission),
             newFee
         );
         emit FeeUpdate(newFee);
+    }
+
+    /**
+     * AUDIT 2026-08 (M-2). Recovers native currency that is sitting in this
+     * contract because a `.send()` payout silently failed — see {_transferTo}.
+     * Sales pay out in full within the same transaction, so a correct market
+     * never holds a balance; anything here is stranded value that previously had
+     * no way out at all.
+     */
+    function rescueNative(address payable to, uint256 amount)
+        external
+        onlyOwner
+        onlyProxy
+    {
+        require(to != address(0), "ZERO_ADDRESS");
+        (bool ok, ) = to.call{value: amount}("");
+        require(ok, "RESCUE_FAILED");
+        emit NativeRescued(to, amount);
     }
 }

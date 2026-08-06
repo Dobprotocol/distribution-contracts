@@ -70,5 +70,6 @@ enum KeyPrefix {
     schedInterval,       // per token: seconds between scheduled distributions
     schedTotalCount,     // per token: total scheduled distributions (0 = unlimited)
     schedExecuted,       // per token: scheduled distributions already fired
-    roundSnapshotId      // per (token, roundId): participation-token snapshot id at round creation
+    roundSnapshotId,     // per (token, roundId): participation-token snapshot id at round creation
+    publicDistribution   // per pool: bool, owner opt-in to permissionless createDistribution (AUDIT 2026-08 / B-1)
 }

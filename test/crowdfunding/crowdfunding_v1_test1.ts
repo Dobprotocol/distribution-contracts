@@ -17,9 +17,21 @@ async function increaseTime(s: number) {
 
 describe("CrowdfundingV1 — escrow campaign (Stellar crowdfunding_v1 port)", function () {
     let accounts: SignerWithAddress[];
-    let admin: SignerWithAddress, inv1: SignerWithAddress, inv2: SignerWithAddress, splitter: SignerWithAddress;
+    let admin: SignerWithAddress, inv1: SignerWithAddress, inv2: SignerWithAddress;
     let token: Contract;
     let cf: Contract;
+    let splitter: Contract;
+
+    // Activation is timelocked (AUDIT 2026-08 / N-1), so this suite now jumps a
+    // week ahead. Hardhat shares one in-memory node across the whole run, so the
+    // clock has to be put back or later suites that derive dates from Date.now()
+    // start failing.
+    let snapshotId: string;
+    const TIMELOCK = 7 * 24 * 3600;
+
+    afterEach(async function () {
+        await ethers.provider.send("evm_revert", [snapshotId]);
+    });
 
     const PRICE = parseEther("1");   // 1 token per share
     const SOFT = 100;
@@ -34,9 +46,15 @@ describe("CrowdfundingV1 — escrow campaign (Stellar crowdfunding_v1 port)", fu
     }
 
     beforeEach(async function () {
+        snapshotId = await ethers.provider.send("evm_snapshot", []);
         accounts = await ethers.getSigners();
-        admin = accounts[0]; inv1 = accounts[1]; inv2 = accounts[2]; splitter = accounts[9];
+        admin = accounts[0]; inv1 = accounts[1]; inv2 = accounts[2];
         token = await deployExternalToken(admin, "USD Coin", "USDC", parseEther("1000000").toString());
+        // The activation probe only accepts something that answers
+        // getParticipationToken(), so the destination can no longer be an EOA.
+        const Mock = await ethers.getContractFactory("MockSplitter");
+        splitter = await Mock.connect(admin).deploy(token.address);
+        await splitter.deployed();
         // fund investors and approve generously
         for (const inv of [inv1, inv2]) {
             await token.connect(admin).functions.transfer(inv.address, parseEther("10000"));
@@ -83,6 +101,9 @@ describe("CrowdfundingV1 — escrow campaign (Stellar crowdfunding_v1 port)", fu
 
         const raised = PRICE.mul(120);
         const splBefore = (await token.functions.balanceOf(splitter.address))[0];
+        await expect(cf.connect(inv1).functions.proposeActivation(splitter.address)).to.be.revertedWithCustomError(cf, "OnlyAdmin");
+        await cf.connect(admin).functions.proposeActivation(splitter.address);
+        await increaseTime(TIMELOCK + 1);
         await expect(cf.connect(inv1).functions.activate(splitter.address)).to.be.revertedWithCustomError(cf, "OnlyAdmin");
         await cf.connect(admin).functions.activate(splitter.address);
         expect((await cf.functions.status())[0]).to.equal(3); // Activated
@@ -99,7 +120,7 @@ describe("CrowdfundingV1 — escrow campaign (Stellar crowdfunding_v1 port)", fu
         await cf.functions.finalize();
         expect((await cf.functions.status())[0]).to.equal(2); // Failed
 
-        await expect(cf.connect(admin).functions.activate(splitter.address)).to.be.revertedWithCustomError(cf, "NotSucceeded");
+        await expect(cf.connect(admin).functions.proposeActivation(splitter.address)).to.be.revertedWithCustomError(cf, "NotSucceeded");
 
         const before = (await token.functions.balanceOf(inv1.address))[0];
         await cf.connect(inv1).functions.refund();

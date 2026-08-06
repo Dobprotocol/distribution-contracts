@@ -19,6 +19,9 @@ async function increaseTime(seconds: number) {
     await ethers.provider.send("evm_mine", []);
 }
 
+// Minimum claim window a pool owner may configure (AUDIT 2026-08 / B-3).
+const MIN_CLAIM_WINDOW = 30 * 24 * 3600;
+
 // shares & pro-rata helpers: users [acct2, acct3, acct4] hold [86, 59, 54]
 // (totalSupply 199). Commission default = 50 bps (0.5%).
 const SHARES = [86, 59, 54];
@@ -44,7 +47,17 @@ describe("DistributionPoolV2 — lazy pull-based distribution", function () {
     let _v2: Contract;
     let pool: Contract;
 
+    // This suite fast-forwards the chain by up to a month. Hardhat shares one
+    // in-memory node across the whole run, so the clock has to be put back or
+    // later suites that derive dates from Date.now() start failing.
+    let snapshotId: string;
+
+    afterEach(async function () {
+        await ethers.provider.send("evm_revert", [snapshotId]);
+    });
+
     beforeEach(async function () {
+        snapshotId = await ethers.provider.send("evm_snapshot", []);
         accounts = await ethers.getSigners();
         creator = accounts[0];
         operational = accounts[1];
@@ -152,8 +165,11 @@ describe("DistributionPoolV2 — lazy pull-based distribution", function () {
     });
 
     it("expires rounds and lets the admin reclaim the unclaimed remainder", async function () {
-        // minInterval 0, claimDelay 0, expiry 100s
-        await pool.connect(poolOwner).functions.setDistributionConfig(0, 0, 100);
+        // minInterval 0, claimDelay 0, expiry at the 30-day floor. A shorter
+        // window is no longer configurable (AUDIT 2026-08 / B-3): it would let
+        // the owner expire a round before holders could realistically claim and
+        // then reclaim the remainder.
+        await pool.connect(poolOwner).functions.setDistributionConfig(0, 0, MIN_CLAIM_WINDOW);
         const deposit = parseEther("1");
         await pool.connect(stranger).functions.deposit({ value: deposit });
         await (await pool.connect(poolOwner).functions.createDistribution(AddressZero)).wait();
@@ -163,7 +179,7 @@ describe("DistributionPoolV2 — lazy pull-based distribution", function () {
         await pool.connect(stranger).functions.claim(poolUsers[0], AddressZero, 0);
         const claimed0 = proRata(totalAmount, 86);
 
-        await increaseTime(101);
+        await increaseTime(MIN_CLAIM_WINDOW + 1);
         // claims now fail
         await expect(
             pool.connect(stranger).functions.claim(poolUsers[1], AddressZero, 0)
