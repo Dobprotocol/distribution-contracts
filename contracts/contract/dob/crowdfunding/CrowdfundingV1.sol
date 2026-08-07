@@ -276,6 +276,9 @@ contract CrowdfundingV1 is ReentrancyGuard {
      * re-propose against the corrected list and serve a fresh notice. Each
      * investor can only force this once (their position goes to zero), so the
      * reset is bounded by the number of contributors.
+     *
+     * AUDIT 2026-08 (S-3) — and if the exits take the raise back under the soft
+     * cap, the campaign fails. See the block at the end of this function.
      */
     function optOut() external nonReentrant returns (uint256 refundAmount) {
         if (status == Status.Activated) revert AlreadyActivated();
@@ -294,6 +297,30 @@ contract CrowdfundingV1 is ReentrancyGuard {
         emit CfActivationCancelled(pendingSplitter);
         pendingSplitter = address(0);
         activationEta = 0;
+
+        // AUDIT 2026-08 (S-3). The soft cap is a promise made to the investors
+        // who stay: "this only goes ahead if at least N shares are sold".
+        // Nothing re-checked it after an exit, so a campaign that dropped under
+        // its own minimum stayed Succeeded and the admin could activate —
+        // funding the project with less money than the campaign said it needed,
+        // and handing the remaining investors a cap table they never agreed to.
+        //
+        // The rule already exists in {finalize}; this re-applies it. Below the
+        // cap the campaign is Failed, which closes {activate} and opens the
+        // ordinary {refund} path for everyone left, immediately — no waiting out
+        // the 90-day activation window. Announced with {CfFinalized}, the same
+        // event {finalize} emits, so indexers need no new case.
+        //
+        // The cost, stated plainly: a contributor large enough to break the cap
+        // can kill the campaign while a proposal stands. That exposure is
+        // entirely in the admin's hands — ACTIVATION_TIMELOCK is zero, so an
+        // admin who proposes and activates in the same transaction offers no
+        // window at all. Refusing the exit instead would trap precisely the
+        // biggest investor, who is the one this whole flow protects.
+        if (totalSharesSold < softCapShares) {
+            status = Status.Failed;
+            emit CfFinalized(Status.Failed, totalSharesSold, totalRaised);
+        }
 
         paymentToken.safeTransfer(msg.sender, refundAmount);
         emit CfOptOut(msg.sender, shares, refundAmount);

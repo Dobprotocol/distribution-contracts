@@ -105,9 +105,12 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
             await token.connect(inv).functions.approve(cf.address, parseEther("1000000"));
         }
 
-        // a successful campaign: 200 shares sold against a soft cap of 100
+        // A successful campaign: 300 shares sold against a soft cap of 100.
+        // Deliberate slack — either investor can walk out without taking the
+        // raise under its own minimum, which since S-3 would fail the campaign
+        // outright. The S-3 tests below build their own tight campaign for that.
         await cf.connect(inv1).functions.contribute(120);
-        await cf.connect(inv2).functions.contribute(80);
+        await cf.connect(inv2).functions.contribute(180);
         await increaseTime(DEADLINE_OFFSET + 1);
         await cf.connect(inv1).functions.finalize();
         expect((await cf.functions.status())[0]).to.equal(1); // Succeeded
@@ -115,7 +118,7 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
 
     it("N-1: the escrow can no longer be sent anywhere on a whim", async function () {
         const raised = (await cf.functions.totalRaised())[0];
-        expect(raised).to.equal(PRICE.mul(200));
+        expect(raised).to.equal(PRICE.mul(300));
         expect((await token.functions.balanceOf(cf.address))[0]).to.equal(raised);
 
         // A plain EOA is not a splitter and is now rejected outright.
@@ -194,11 +197,11 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         const b2 = (await token.functions.balanceOf(inv2.address))[0];
         await cf.connect(inv2).functions.refund();
         expect((await token.functions.balanceOf(inv2.address))[0].sub(b2))
-            .to.equal(PRICE.mul(80));
+            .to.equal(PRICE.mul(180));
 
         // Every cent left, and nobody can refund twice.
         expect((await token.functions.balanceOf(cf.address))[0]).to.equal(0);
-        expect(raised).to.equal(PRICE.mul(200));
+        expect(raised).to.equal(PRICE.mul(300));
         await expect(
             cf.connect(inv1).functions.refund()
         ).to.be.revertedWithCustomError(cf, "NothingToRefund");
@@ -236,9 +239,11 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         expect((await cf.functions.contributions(inv1.address))[0]).to.equal(0);
 
         // The campaign shrank, and the escrow still matches the books.
-        expect((await cf.functions.totalRaised())[0]).to.equal(PRICE.mul(80));
-        expect((await token.functions.balanceOf(cf.address))[0]).to.equal(PRICE.mul(80));
-        expect((await cf.functions.totalSharesSold())[0]).to.equal(80);
+        expect((await cf.functions.totalRaised())[0]).to.equal(PRICE.mul(180));
+        expect((await token.functions.balanceOf(cf.address))[0]).to.equal(PRICE.mul(180));
+        expect((await cf.functions.totalSharesSold())[0]).to.equal(180);
+        // Still above the soft cap, so the campaign survives the exit.
+        expect((await cf.functions.status())[0]).to.equal(1); // Succeeded
 
         // The proposal is gone: the admin cannot activate against the stale cap
         // table it built before inv1 walked out.
@@ -253,7 +258,7 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         // list, and only the remaining money ever moves.
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
         await cf.connect(admin).functions.activate(poolLike.address);
-        expect((await token.functions.balanceOf(poolLike.address))[0]).to.equal(PRICE.mul(80));
+        expect((await token.functions.balanceOf(poolLike.address))[0]).to.equal(PRICE.mul(180));
         expect((await token.functions.balanceOf(cf.address))[0]).to.equal(0);
     });
 
@@ -295,6 +300,82 @@ describe("AUDIT 2026-08 / CrowdfundingV1 escrow trust", function () {
         await cf.connect(admin).functions.proposeActivation(poolLike.address);
         const [, eta] = await cf.functions.getPendingActivation();
         expect(eta.toNumber()).to.equal((await now()) + TIMELOCK);
+    });
+
+    /**
+     * A second campaign with no slack over the soft cap, so a single exit can
+     * take it under. The one built in `beforeEach` deliberately has room.
+     */
+    async function tightCampaign(sharesA: number, sharesB: number): Promise<Contract> {
+        const CF = await ethers.getContractFactory("CrowdfundingV1");
+        const tight = await CF.connect(admin).deploy(
+            admin.address, token.address, PRICE, SOFT, HARD,
+            (await now()) + DEADLINE_OFFSET
+        );
+        await tight.deployed();
+        for (const inv of [inv1, inv2]) {
+            await token.connect(inv).functions.approve(tight.address, parseEther("1000000"));
+        }
+        await tight.connect(inv1).functions.contribute(sharesA);
+        await tight.connect(inv2).functions.contribute(sharesB);
+        await increaseTime(DEADLINE_OFFSET + 1);
+        await tight.connect(inv1).functions.finalize();
+        expect((await tight.functions.status())[0]).to.equal(1); // Succeeded
+        return tight;
+    }
+
+    it("S-3: leaving under the soft cap fails the campaign instead of activating short", async function () {
+        // 150 sold against a soft cap of 100; inv1's 120 walking out leaves 30.
+        const tight = await tightCampaign(120, 30);
+        await tight.connect(admin).functions.proposeActivation(poolLike.address);
+
+        await tight.connect(inv1).functions.optOut();
+
+        expect((await tight.functions.totalSharesSold())[0]).to.equal(30);
+        expect((await tight.functions.status())[0]).to.equal(2); // Failed
+
+        // The admin cannot announce or activate a campaign that no longer meets
+        // the minimum it promised.
+        await expect(
+            tight.connect(admin).functions.proposeActivation(poolLike.address)
+        ).to.be.revertedWithCustomError(tight, "NotSucceeded");
+        await expect(
+            tight.connect(admin).functions.activate(poolLike.address)
+        ).to.be.revertedWithCustomError(tight, "NotSucceeded");
+        expect((await token.functions.balanceOf(poolLike.address))[0]).to.equal(0);
+
+        // And inv2 — who never asked for any of this — is refunded straight
+        // away, without waiting out the 90-day activation window.
+        const before = (await token.functions.balanceOf(inv2.address))[0];
+        await tight.connect(inv2).functions.refund();
+        expect((await token.functions.balanceOf(inv2.address))[0].sub(before))
+            .to.equal(PRICE.mul(30));
+        expect((await token.functions.balanceOf(tight.address))[0]).to.equal(0);
+    });
+
+    it("S-3: the break is announced with the same event finalize emits", async function () {
+        const tight = await tightCampaign(120, 30);
+        await tight.connect(admin).functions.proposeActivation(poolLike.address);
+
+        // Indexers already understand CfFinalized as "the campaign settled";
+        // re-using it means the off-chain view flips to Failed with no new case.
+        await expect(tight.connect(inv1).functions.optOut())
+            .to.emit(tight, "CfFinalized")
+            .withArgs(2, 30, PRICE.mul(30));
+    });
+
+    it("S-3: an exit that lands exactly on the soft cap keeps the campaign alive", async function () {
+        // The comparison is `<`, not `<=`: sitting on the cap still qualifies.
+        const tight = await tightCampaign(100, 50);
+        await tight.connect(admin).functions.proposeActivation(poolLike.address);
+        await tight.connect(inv2).functions.optOut();
+
+        expect((await tight.functions.totalSharesSold())[0]).to.equal(SOFT);
+        expect((await tight.functions.status())[0]).to.equal(1); // Succeeded
+
+        await tight.connect(admin).functions.proposeActivation(poolLike.address);
+        await tight.connect(admin).functions.activate(poolLike.address);
+        expect((await token.functions.balanceOf(poolLike.address))[0]).to.equal(PRICE.mul(SOFT));
     });
 
     it("N-3: a fee-on-transfer payment token is rejected at contribution", async function () {
