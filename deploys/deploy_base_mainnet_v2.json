@@ -5,7 +5,7 @@
   "poolMasterConfig": "0x80cc2C488DDB1D6082AEC050b4f634CbB3cAF03e",
   "poolMaster": "0x240f4b752189a68BD0C2B5B1dF5b29cB58e7CCF6",
   "distributionPoolV2Logic": "0xE2DE466f55B987Ce6aD1A503b5DA15Ea364cf12B",
-  "crowdfundingFactory": "0x49c44e098ff4A06d2859646d09946E4BD4E8663e",
+  "crowdfundingFactory": "0x30f29009E0D11dE0e8c5F64e031Bf3d113EE3ead",
   "logicVersion": "2",
   "sharesLimit": "1000000",
   "poolMasterLogic": "0x43eF74cDf70a7125886524B5DD4016fDe7bB6a8a",
@@ -18,5 +18,12 @@
       "logicVersion": "1"
     },
     "tokenSaleMarket": "NO actualizado: owner 0xe5Ed5d930Bd6D183C9C973aF3D6f81f1700Cf084, fuera de nuestro control"
+  },
+  "audit_2026_08_s3": {
+    "date": "2026-08-06",
+    "previousCrowdfundingFactory": "0x49c44e098ff4A06d2859646d09946E4BD4E8663e",
+    "probeCampaign": "0x9FE1A459bbc5A69385551cCDb3cafA51FDFbf0C9",
+    "probeTx": "0x48e33e484294f9d22edf589705c4e6520e3759cc4203f4075b96afa95ac6a487",
+    "note": "Factory nueva porque CrowdfundingFactory no es upgradeable y hace new CrowdfundingV1(...): el fix de S-3 solo llega a las campanas creadas desde aqui."
   }
 }
