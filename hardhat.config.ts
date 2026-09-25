@@ -156,6 +156,17 @@ module.exports = {
       process.env.ACCOUNT_LISK?.split(","),
       gasPrice: 2000000
     },
+    // Robinhood Chain mainnet (Arbitrum Orbit, chain 4663). Same owner wallet
+    // as the Base V2 stack, so one key administers both.
+    robinhood: {
+      url: process.env.ROBINHOOD_URL || "https://rpc.mainnet.chain.robinhood.com",
+      chainId: 4663,
+      // The public RPC takes >40s to answer a 24 KB deploy at times; hardhat's
+      // default gave up mid-stack ("Headers Timeout Error").
+      timeout: 180000,
+      accounts:
+      process.env.ACCOUNT_BASE?.split(",")
+    },
     robinhoodtestnet: {
       url: process.env.ROBINHOOD_TESTNET_URL || "https://rpc.testnet.chain.robinhood.com",
       accounts:
@@ -168,8 +179,19 @@ module.exports = {
       baseSepolia: process.env.BASE_API_KEY,
       arbitrumOne: process.env.ARBISCAN_API_KEY,
       arbitrumSepolia: process.env.ARBISCAN_API_KEY,
-      lisk: process.env.LISK_API_KEY
-    }
+      lisk: process.env.LISK_API_KEY,
+      robinhood: "blockscout"
+    },
+    customChains: [
+      {
+        network: "robinhood",
+        chainId: 4663,
+        urls: {
+          apiURL: "https://robinhoodchain.blockscout.com/api",
+          browserURL: "https://robinhoodchain.blockscout.com"
+        }
+      }
+    ]
   },
   sourcify: {
     enabled: true

@@ -1,0 +1,21 @@
+{
+  "network": "robinhood",
+  "chainId": 4663,
+  "deployer": "0xd874452BdC9922291F40D2A4032Bd6aF5ccE6F5E",
+  "storage": "0x5a2c5D94F548E17Ceb26BD1c50aABc5dD5eAFaf3",
+  "poolMasterConfig": "0xA06c8ae13fC7e193d75111f055AbdD26fFa270aC",
+  "poolMaster": "0x84d1A20a2e1589c1dBEd72E5b70799BBedeDD641",
+  "poolMasterConfigLogic": "0x5Ec24E73fFA7c5377A580B2c38B775Eb732686e3",
+  "poolMasterLogic": "0xfd80d9C5401D3C2334091b2F1D344bE359e1a3C3",
+  "distributionPoolV2Logic": "0xc2DeEcaa8dc7a81c41e2512ac4088C89f4bd6584",
+  "crowdfundingFactory": "0x9C08a98F3D8BD62fb3e9EAe8D432bf1669875bC2",
+  "logicVersion": "1",
+  "sharesLimit": "10000000",
+  "date": "2026-09-25",
+  "collateralVault": "0x8ffF3F05343eB29205bDAbfAFE2A90C014093f31",
+  "collateralVaultAdmin": "0xd874452BdC9922291F40D2A4032Bd6aF5ccE6F5E",
+  "collateralVaultTokens": [
+    "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+    "0x80e0e24718dbFcad49ECAA6F1e6C89A190586cA8"
+  ]
+}
