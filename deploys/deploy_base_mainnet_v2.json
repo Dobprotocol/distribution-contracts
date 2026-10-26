@@ -25,5 +25,13 @@
     "probeCampaign": "0x9FE1A459bbc5A69385551cCDb3cafA51FDFbf0C9",
     "probeTx": "0x48e33e484294f9d22edf589705c4e6520e3759cc4203f4075b96afa95ac6a487",
     "note": "Factory nueva porque CrowdfundingFactory no es upgradeable y hace new CrowdfundingV1(...): el fix de S-3 solo llega a las campanas creadas desde aqui."
-  }
+  },
+  "collateralVault": "0xDAF95f01Ca39688821441c8f91e73AC09980DF92",
+  "collateralVaultAdmin": "0xd874452BdC9922291F40D2A4032Bd6aF5ccE6F5E",
+  "collateralVaultTokens": [
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "0x931eF8053E997b1Bab68d1E900a061305c0Ff4FB"
+  ],
+  "holderRewardDistributor": "0xa34770b886d414F942de1d2C9826d37d0E814d45",
+  "holderRewardDistributorOwner": "0xd874452BdC9922291F40D2A4032Bd6aF5ccE6F5E"
 }

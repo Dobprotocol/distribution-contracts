@@ -10,5 +10,19 @@
   "crowdfundingCampaign": "0xAc62855A459e208F034c5ab787bA6A4CCa84e4D6",
   "crowdfundingPool": "0x4C669b4d9dA9938e5dd2a45513877f2Bf4aEBbD8",
   "crowdfundingToken": "0x6ea056AC2aB8Fe8D4b55ea18Dc3C24421c8f4e41",
-  "activationEta": 1786033166
+  "activationEta": 1786033166,
+  "collateralVault": "0x27AA55999d6B7C15a634a8C1cF4378B6FD08363C",
+  "collateralVaultAdmin": "0x305DaB055730E0b3AB193051e67ADa3E9BC59142",
+  "collateralVaultTokens": [
+    "0x6ea056AC2aB8Fe8D4b55ea18Dc3C24421c8f4e41"
+  ],
+  "collateralE2E": {
+    "payToken": "0x2D17066e6bb247701257c86b39d01BE127ae6a62"
+  },
+  "collateralVaultPrevious": [
+    "0x1784475369644b030d6485E2Dd08e9912a8C63dc",
+    "0xD298d88026bB69f369ea6EC4791897e9D4F69e2E"
+  ],
+  "holderRewardDistributor": "0x9162820C7ea319537A92fbac7641AAE3ae022F0E",
+  "holderRewardDistributorOwner": "0x305DaB055730E0b3AB193051e67ADa3E9BC59142"
 }
